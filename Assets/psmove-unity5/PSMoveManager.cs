@@ -43,10 +43,8 @@ using System.Diagnostics;
 
 public class PSMoveManager : MonoBehaviour 
 {
-    private IntPtr hidapiHandle;
-    private IntPtr libusbHandle;
-    private IntPtr opencvHandle;
     private IntPtr psmoveapiHandle;
+    private IntPtr psmoveapiTrackerHandle;
     private IntPtr cleyeHandle;
 
     private static PSMoveManager ManagerInstance;
@@ -58,63 +56,17 @@ public class PSMoveManager : MonoBehaviour
 
     public void Awake() 
     {
-#if LOAD_DLL_MANUALLY
-        if (IntPtr.Size == 8)
-        {
-            hidapiHandle = LoadLib("Assets/Plugins/x86_64/hidapi.dll");
-            libusbHandle = LoadLib("Assets/Plugins/x86_64/libusb-1.0.dll");
-            opencvHandle = LoadLib("Assets/Plugins/x86_64/opencv_world300.dll");
-            psmoveapiHandle = LoadLib("Assets/Plugins/x86_64/psmoveapi.dll");
-        }
-        else
-        {
-            hidapiHandle = LoadLib("Assets/Plugins/x86/hidapi.dll");
-            cleyeHandle = LoadLib("c:/Windows/SysWOW64/CLEyeMulticam.dll");
-            opencvHandle = LoadLib("Assets/Plugins/x86/opencv_world300.dll");
-            psmoveapiHandle = LoadLib("Assets/Plugins/x86/psmoveapi.dll");
-        }
-#endif
-
-        ManagerInstance = this;
-	    PSMoveWorker.StartWorkerThread();
-    }
-
-    public void OnDestroy()
-    {
-        PSMoveWorker.StopWorkerThread();
-
-        //Free any manually loaded DLLs
-        if (psmoveapiHandle != IntPtr.Zero)
-        {
-            FreeLibrary(psmoveapiHandle);
-        }
-
-        if (opencvHandle != IntPtr.Zero)
-        {
-            FreeLibrary(opencvHandle);
-        }
-
-        if (libusbHandle != IntPtr.Zero)
-        {
-            FreeLibrary(libusbHandle);
-        }
-
-        if (hidapiHandle != IntPtr.Zero)
-        {
-            FreeLibrary(hidapiHandle);
-        }
-
-        if (cleyeHandle != IntPtr.Zero)
-        {
-            FreeLibrary(cleyeHandle);
-        }
-
-        ManagerInstance = null;
+        Setup();
     }
 
     public void OnApplicationQuit()
     {
-        PSMoveWorker.StopWorkerThread();
+        Shutdown();
+    }
+
+    public void OnDestroy()
+    {
+        Shutdown();
     }
 
     public PSMoveDataContext AcquirePSMove(int PSMoveID)
@@ -125,6 +77,56 @@ public class PSMoveManager : MonoBehaviour
     public void ReleasePSMove(PSMoveDataContext DataContext)
     {
         PSMoveWorker.GetWorkerThreadInstance().ReleasePSMove(DataContext);
+    }
+
+    private void Setup()
+    {
+        if (ManagerInstance == null)
+        {
+#if LOAD_DLL_MANUALLY
+            if (IntPtr.Size == 8)
+            {
+                cleyeHandle = IntPtr.Zero;
+                psmoveapiHandle = LoadLib("Assets/Plugins/x86_64/psmoveapi.dll");
+                psmoveapiTrackerHandle = LoadLib("Assets/Plugins/x86_64/psmoveapi_tracker.dll");
+            }
+            else
+            {
+                cleyeHandle = LoadLib("c:/Windows/SysWOW64/CLEyeMulticam.dll");
+                psmoveapiHandle = LoadLib("Assets/Plugins/x86/psmoveapi.dll");
+                psmoveapiTrackerHandle = LoadLib("Assets/Plugins/x86/psmoveapi_tracker.dll");
+            }
+#endif
+
+            ManagerInstance = this;
+            PSMoveWorker.StartWorkerThread();
+        }
+    }
+
+    private void Shutdown()
+    {
+        if (ManagerInstance != null)
+        {
+            PSMoveWorker.StopWorkerThread();
+
+            //Free any manually loaded DLLs
+            if (psmoveapiTrackerHandle != IntPtr.Zero)
+            {
+                FreeLibrary(psmoveapiTrackerHandle);
+            }
+
+            if (psmoveapiHandle != IntPtr.Zero)
+            {
+                FreeLibrary(psmoveapiHandle);
+            }
+
+            if (cleyeHandle != IntPtr.Zero)
+            {
+                FreeLibrary(cleyeHandle);
+            }
+
+            ManagerInstance = null;
+        }
     }
 
 #if LOAD_DLL_MANUALLY
@@ -222,6 +224,7 @@ class PSMoveWorker
         if (WorkerInstance != null)
         {
             WorkerInstance.Stop();
+            WorkerInstance = null;
         }
     }
 
@@ -296,8 +299,8 @@ class PSMoveWorker
         // Signal the thread to stop
         StopSignal.Set();
 
-        // Wait one second for the thread to finish
-        ExitedSignal.WaitOne(1000);
+        // Wait ten seconds for the thread to finish
+        ExitedSignal.WaitOne(10*1000);
 
         // Reset the stop and exited flags so that the thread can be restarted
         StopSignal.Reset();
@@ -425,6 +428,11 @@ class PSMoveWorker
                 {
                     receivedStopSignal = true;
                 }
+
+                if (!receivedStopSignal)
+                {
+                    System.Threading.Thread.Sleep(1);
+                }
             }
         }
         catch (Exception e)
@@ -442,6 +450,7 @@ class PSMoveWorker
     private static bool TrackingContextSetup(TrackingContext context)
     {
         bool success = true;
+        int errorCode= 0;
 
         // Clear out the tracking state
         // Reset the shared worker data
@@ -458,7 +467,8 @@ class PSMoveWorker
             settings.use_fitEllipse = 1;
             settings.camera_mirror = PSMove_Bool.PSMove_True;
 
-            context.PSMoveTracker = PSMoveAPI.psmove_tracker_new_with_settings(ref settings);
+            //context.PSMoveTracker = PSMoveAPI.psmove_tracker_new_with_settings(ref settings);
+            context.PSMoveTracker = PSMoveAPI.psmove_tracker_new_with_camera_and_settings_and_error(0, ref settings, ref errorCode);
         }
 
         if (context.PSMoveTracker != IntPtr.Zero)
