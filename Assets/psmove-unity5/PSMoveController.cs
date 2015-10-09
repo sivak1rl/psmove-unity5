@@ -171,12 +171,18 @@ public class PSMoveController : MonoBehaviour
     /// </summary>
 	public void Start()
 	{
-        dataContext = PSMoveManager.GetManagerInstance().AcquirePSMove(this.PSMoveID);
+        if (PSMoveManager.GetManagerInstance() != null)
+        {
+            dataContext = PSMoveManager.GetManagerInstance().AcquirePSMove(this.PSMoveID);
+        }
 	}
 
     public void OnDestroy()
     {
-        PSMoveManager.GetManagerInstance().ReleasePSMove(dataContext);
+        if (PSMoveManager.GetManagerInstance() != null)
+        {
+            PSMoveManager.GetManagerInstance().ReleasePSMove(dataContext);
+        }
     }
 	
 	void Update() 
