@@ -41,6 +41,11 @@ public class PSMovePose
     public Quaternion ZeroYaw;
     public Quaternion UncorrectedWorldOrientation;
 
+    public PSMovePose()
+    {
+        Clear();
+    }
+
     public void Clear()
     {
         WorldPosition = Vector3.zero;
@@ -161,7 +166,7 @@ public class PSMovePose
             Quaternion GameCameraOrientation = Camera.current.transform.rotation;
             Vector3 GameCameraLocation = Camera.current.transform.position;
 
-            if (OVRManager.tracker.isPresent && OVRManager.tracker.isEnabled)
+            if (OVRManager.tracker != null && OVRManager.tracker.isPresent && OVRManager.tracker.isEnabled)
             {
                 Vector3 TrackingCameraOrigin = Vector3.zero;
                 Quaternion TrackingCameraOrientation= Quaternion.identity;
