@@ -38,6 +38,109 @@ using System;
 /* The following functions are bindings to Thomas Perl's C API for the PlayStation Move (http://thp.io/2010/psmove/)
  * See README for more details.
  */
+/*! Boolean type. Use them instead of 0 and 1 to improve code readability. */
+public enum PSMove_Bool
+{
+    PSMove_False = 0, /*!< False, Failure, Disabled (depending on context) */
+    PSMove_True = 1, /*!< True, Success, Enabled (depending on context) */
+};
+
+/// <summary>
+/// The Move controller can be connected by USB and/or Bluetooth.
+/// </summary>
+public enum PSMoveConnectionType
+{
+    Bluetooth,
+    USB,
+    Unknown,
+};
+
+// Not entirely sure why some of these buttons (R3/L3) are exposed...
+public enum PSMoveButton
+{
+    L2 = 1 << 0x00,
+    R2 = 1 << 0x01,
+    L1 = 1 << 0x02,
+    R1 = 1 << 0x03,
+    Triangle = 1 << 0x04,
+    Circle = 1 << 0x05,
+    Cross = 1 << 0x06,
+    Square = 1 << 0x07,
+    Select = 1 << 0x08,
+    L3 = 1 << 0x09,
+    R3 = 1 << 0x0A,
+    Start = 1 << 0x0B,
+    Up = 1 << 0x0C,
+    Right = 1 << 0x0D,
+    Down = 1 << 0x0E,
+    Left = 1 << 0x0F,
+    PS = 1 << 0x10,
+    Move = 1 << 0x13,
+    Trigger = 1 << 0x14,	/* We can use this value with IsButtonDown() (or the events) to get 
+                             * a binary yes/no answer about if the trigger button is down at all.
+                             * For the full integer/analog value of the trigger, see the corresponding property below.
+                             */
+};
+
+// Used by psmove_get_battery().
+public enum PSMove_Battery_Level
+{
+    Batt_MIN = 0x00, /*!< Battery is almost empty (< 20%) */
+    Batt_20Percent = 0x01, /*!< Battery has at least 20% remaining */
+    Batt_40Percent = 0x02, /*!< Battery has at least 40% remaining */
+    Batt_60Percent = 0x03, /*!< Battery has at least 60% remaining */
+    Batt_80Percent = 0x04, /*!< Battery has at least 80% remaining */
+    Batt_MAX = 0x05, /*!< Battery is fully charged (not on charger) */
+    Batt_CHARGING = 0xEE, /*!< Battery is currently being charged */
+    Batt_CHARGING_DONE = 0xEF, /*!< Battery is fully charged (on charger) */
+};
+
+public enum PSMove_Frame
+{
+    Frame_FirstHalf = 0, /*!< The older frame */
+    Frame_SecondHalf, /*!< The most recent frame */
+};
+
+/*! Status of the tracker */
+public enum PSMoveTracker_Status
+{
+    Tracker_NOT_CALIBRATED, /*!< Controller not registered with tracker */
+    Tracker_CALIBRATION_ERROR, /*!< Calibration failed (check lighting, visibility) */
+    Tracker_CALIBRATED, /*!< Color calibration successful, not currently tracking */
+    Tracker_TRACKING, /*!< Calibrated and successfully tracked in the camera */
+};
+
+/*! Known camera types. Used for calculating focal length when calibration not present. */
+public enum PSMoveTracker_Camera_type
+{
+    PSMove_Camera_PS3EYE_BLUEDOT,
+    PSMove_Camera_PS3EYE_REDDOT,
+    PSMove_Camera_Unknown
+};
+
+/*! Exposure modes */
+public enum PSMoveTracker_Exposure
+{
+    Exposure_LOW, /*!< Very low exposure: Good tracking, no environment visible */
+    Exposure_MEDIUM, /*!< Middle ground: Good tracking, environment visibile */
+    Exposure_HIGH, /*!< High exposure: Fair tracking, but good environment */
+    Exposure_INVALID, /*!< Invalid exposure value (for returning failures) */
+};
+
+public enum PSMoveTracker_Smoothing_Type
+{
+    Smoothing_None,		// Don't use any smoothing
+    Smoothing_LowPass,	// A basic low pass filter (default)
+    Smoothing_Kalman,	// A more expensive Kalman filter 
+};
+
+public enum PSMoveTracker_ErrorCode
+{
+    PSMove_Camera_Error_None,
+    PSMove_Camera_Not_Found,
+    PSMove_Camera_USB_Open_Failure,
+    PSMove_Camera_Query_Frame_Failure,
+};
 
 public class PSMoveAPI
 {
