@@ -124,7 +124,6 @@ public class PSMoveController : MonoBehaviour
     }
 
     // Debug
-    public bool ShowHMDFrustumDebug { get; set; }
     public bool ShowTrackingDebug { get; set; }
 
     #endregion

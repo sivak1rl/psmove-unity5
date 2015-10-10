@@ -43,30 +43,18 @@ using System.Diagnostics;
 
 public class PSMoveManager : MonoBehaviour 
 {
+    public bool ShowHMDFrustumDebug;
+
     private IntPtr psmoveapiHandle;
     private IntPtr psmoveapiTrackerHandle;
     private IntPtr cleyeHandle;
 
     private static PSMoveManager ManagerInstance;
 
+    // Public API
     public static PSMoveManager GetManagerInstance()
     {
         return ManagerInstance;
-    }
-
-    public void Awake() 
-    {
-        Setup();
-    }
-
-    public void OnApplicationQuit()
-    {
-        Shutdown();
-    }
-
-    public void OnDestroy()
-    {
-        Shutdown();
     }
 
     public PSMoveDataContext AcquirePSMove(int PSMoveID)
@@ -79,6 +67,31 @@ public class PSMoveManager : MonoBehaviour
         PSMoveWorker.GetWorkerThreadInstance().ReleasePSMove(DataContext);
     }
 
+    // Unity Callbacks
+    public void Awake()
+    {
+        Setup();
+    }
+
+    public void Update()
+    {
+        if (ShowHMDFrustumDebug)
+        {
+            PSMoveUtility.DebugDrawHMDFrustum();
+        }
+    }
+
+    public void OnApplicationQuit()
+    {
+        Shutdown();
+    }
+
+    public void OnDestroy()
+    {
+        Shutdown();
+    }
+
+    // Private methods
     private void Setup()
     {
         if (ManagerInstance == null)
@@ -355,7 +368,7 @@ class PSMoveWorker
                     TrackingContextUpdateControllerConnections(Context);
 
                     // Renew the image on camera
-                    using(new PSMoveHitchWatchdog("FPSMoveWorker_UpdateImage", 30*PSMoveHitchWatchdog.MICROSECONDS_PER_MILLISECOND))
+                    using(new PSMoveHitchWatchdog("FPSMoveWorker_UpdateImage", 50*PSMoveHitchWatchdog.MICROSECONDS_PER_MILLISECOND))
                     {
                         PSMoveAPI.psmove_tracker_update_image(Context.PSMoveTracker); // Sometimes libusb crashes here.
                     }
