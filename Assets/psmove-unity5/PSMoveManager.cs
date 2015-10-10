@@ -434,6 +434,12 @@ class PSMoveWorker
                     System.Threading.Thread.Sleep(1);
                 }
             }
+
+            // If there are no component contexts active, make sure the tracking context is torn-down
+            if (TrackingContextIsSetup(Context))
+            {
+                TrackingContextTeardown(Context);
+            }
         }
         catch (Exception e)
         {
@@ -450,7 +456,6 @@ class PSMoveWorker
     private static bool TrackingContextSetup(TrackingContext context)
     {
         bool success = true;
-        int errorCode= 0;
 
         // Clear out the tracking state
         // Reset the shared worker data
@@ -467,8 +472,7 @@ class PSMoveWorker
             settings.use_fitEllipse = 1;
             settings.camera_mirror = PSMove_Bool.PSMove_True;
 
-            //context.PSMoveTracker = PSMoveAPI.psmove_tracker_new_with_settings(ref settings);
-            context.PSMoveTracker = PSMoveAPI.psmove_tracker_new_with_camera_and_settings_and_error(0, ref settings, ref errorCode);
+            context.PSMoveTracker = PSMoveAPI.psmove_tracker_new_with_settings(ref settings);
         }
 
         if (context.PSMoveTracker != IntPtr.Zero)
@@ -487,7 +491,9 @@ class PSMoveWorker
         }
         else
         {
-            UnityEngine.Debug.LogError("PSMove tracker failed to initialize.");
+            PSMoveTracker_ErrorCode errorCode= PSMoveAPI.psmove_tracker_get_last_error();
+
+            UnityEngine.Debug.LogError(string.Format("PSMove tracker failed to initialize: {0}", errorCode.ToString()));
             success = false;
         }
 

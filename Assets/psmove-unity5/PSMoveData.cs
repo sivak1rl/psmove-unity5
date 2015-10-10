@@ -130,6 +130,14 @@ public enum PSMoveTracker_Smoothing_Type
     Smoothing_Kalman,	// A more expensive Kalman filter 
 };
 
+public enum PSMoveTracker_ErrorCode
+{
+    PSMove_Camera_Error_None,
+    PSMove_Camera_Not_Found,
+    PSMove_Camera_USB_Open_Failure,
+    PSMove_Camera_Query_Frame_Failure,
+};
+
 public class PSMoveButtonEventArgs : EventArgs
 {
     public readonly PSMoveButton button;

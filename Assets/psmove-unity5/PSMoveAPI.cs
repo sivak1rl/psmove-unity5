@@ -221,7 +221,7 @@ public class PSMoveAPI
     public static extern IntPtr psmove_tracker_new_with_settings(ref PSMoveTrackerSettings settings);
 
     [DllImport("psmoveapi_tracker.dll")]
-    public static extern IntPtr psmove_tracker_new_with_camera_and_settings_and_error(int camera, ref PSMoveTrackerSettings settings, ref int out_error);
+    public static extern PSMoveTracker_ErrorCode psmove_tracker_get_last_error();
 
     [DllImport("psmoveapi_tracker.dll")]
     public static extern void psmove_tracker_get_smoothing_settings(IntPtr tracker, ref PSMoveTrackerSmoothingSettings smoothing_settings);
