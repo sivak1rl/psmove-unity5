@@ -220,7 +220,7 @@ public class PSMoveDataContext
         }
     }
 
-    public void ComponentRead()
+    public void ComponentRead(Transform ParentGameObjectTransform)
     {
         if (RawControllerData.IsValid())
         {
@@ -241,7 +241,7 @@ public class PSMoveDataContext
                 RawControllerPreviousButtons = PreviousButtons;
 
                 // Refresh the world space controller pose
-                Pose.PoseUpdate(this);
+                Pose.PoseUpdate(this, ParentGameObjectTransform);
             }
         }
     }

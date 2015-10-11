@@ -124,7 +124,8 @@ public class PSMoveController : MonoBehaviour
     }
 
     // Debug
-    public bool ShowTrackingDebug { get; set; }
+    public bool ShowTrackingDebug;
+    public bool ShowHMDFrustumDebug;
 
     #endregion
 
@@ -187,7 +188,7 @@ public class PSMoveController : MonoBehaviour
 	void Update() 
 	{
         // Get the latest state from the 
-        dataContext.ComponentRead();
+        dataContext.ComponentRead(this.gameObject.transform.parent);
 
         // Button Pressed Handlers
         if (OnButtonTrianglePressed != null && dataContext.GetButtonTrianglePressed())
@@ -228,6 +229,12 @@ public class PSMoveController : MonoBehaviour
         // Update the transform of this game object based on the new pose
         this.gameObject.transform.position = dataContext.Pose.WorldPosition;
         this.gameObject.transform.rotation = dataContext.Pose.WorldOrientation;
+
+        // Show the HMD frus
+        if (ShowHMDFrustumDebug)
+        {
+            PSMoveUtility.DebugDrawHMDFrustum(this.gameObject.transform.parent);
+        }
     }
     #endregion
 }

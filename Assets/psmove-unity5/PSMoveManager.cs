@@ -43,8 +43,6 @@ using System.Diagnostics;
 
 public class PSMoveManager : MonoBehaviour 
 {
-    public bool ShowHMDFrustumDebug;
-
     private IntPtr psmoveapiHandle;
     private IntPtr psmoveapiTrackerHandle;
     private IntPtr cleyeHandle;
@@ -71,14 +69,6 @@ public class PSMoveManager : MonoBehaviour
     public void Awake()
     {
         Setup();
-    }
-
-    public void Update()
-    {
-        if (ShowHMDFrustumDebug)
-        {
-            PSMoveUtility.DebugDrawHMDFrustum();
-        }
     }
 
     public void OnApplicationQuit()

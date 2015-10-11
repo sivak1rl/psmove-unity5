@@ -3,25 +3,25 @@ using System.Collections;
 
 public class PSMoveUtility : MonoBehaviour 
 {
-    // Conversion from centimeters to unity units
-    public static float CMToUU = 1.0f / 100.0f;
-    public static float UUToCM = 100.0f;
+    // Conversion between centimeters and meters (Unity Units)
+    public static float CMToMeters = 1.0f / 100.0f;
+    public static float MetersToCM = 100.0f;
 
     public static Quaternion PSMoveQuatToUnityQuat(Quaternion q)
     {
-        return new Quaternion(q.x, q.y, -q.z, q.w);
+        return new Quaternion(-q.x, -q.y, q.z, q.w);
     }
 
-    public static Matrix4x4 RHSInCMToUnityInMetersTransform()
+    public static Vector3 PSMoveCSToUnityCSPosition(Vector3 p)
     {
-        // Convert from Right Handed (e.g., OpenGL, PSMove native) to Unity Left Handed coordinate system.
-        // Also convert units from centimeters to unity units (typically 100 cm == 1 Unity Unit).
-
-        // PSMove Coordinate System -> Unreal Coordinate system ==> (x, y, z) -> (x, y, -z)
-        return Matrix4x4.Scale(new Vector3(CMToUU, CMToUU, -CMToUU));
+        // Convert from OpenGL/PSMove Right Handed coordinate system to Unity Left Handed coordinate system.
+        // PSMove Coordinate System -> Unity Coordinate system ==> (x, y, z) -> (-x, y, z)
+        // PSMove also specifies points in centimenters, while Unity specifies them in meters
+        return new Vector3(-p.x * CMToMeters, p.y * CMToMeters, p.z * CMToMeters);
     }
 
     public static bool ComputeTrackingToWorldTransforms(
+        Transform parentGameObjectTransform,
         ref Matrix4x4 TrackingSpaceToWorldSpacePosition,
         ref Quaternion OrientationTransform)
     {
@@ -32,19 +32,21 @@ public class PSMoveUtility : MonoBehaviour
 
         return
             ComputeTrackingToWorldTransformsAndFrustum(
-                ref TrackingSpaceToWorldSpacePosition, // From CM -> Unity Units
-                ref OrientationTransform, // In Unity Coordinate System
-                ref TrackingCameraNearPlane, // In Unity Units
-                ref TrackingCameraFarPlane, // In Unity Units
+                parentGameObjectTransform,
+                ref TrackingSpaceToWorldSpacePosition, 
+                ref OrientationTransform, 
+                ref TrackingCameraNearPlane,
+                ref TrackingCameraFarPlane,
                 ref TrackingCameraHHalfRadians,
                 ref TrackingCameraVHalfRadians);
     }
 
     public static bool ComputeTrackingToWorldTransformsAndFrustum(
-        ref Matrix4x4 TrackingSpaceToWorldSpacePosition, // From CM -> Unity Units
-        ref Quaternion OrientationTransform, // In Unity Coordinate System
-        ref float TrackingCameraNearPlane, // In Unity Units
-        ref float TrackingCameraFarPlane, // In Unity Units
+        Transform parentGameObjectTransform,
+        ref Matrix4x4 TrackingSpaceToWorldSpacePosition, 
+        ref Quaternion OrientationTransform,
+        ref float TrackingCameraNearPlane, 
+        ref float TrackingCameraFarPlane, 
         ref float TrackingCameraHHalfRadians,
         ref float TrackingCameraVHalfRadians)
     {
@@ -53,8 +55,10 @@ public class PSMoveUtility : MonoBehaviour
         if (Camera.current != null)
         {
             // Get the world game camera transform for the player
-            Quaternion GameCameraOrientation = Camera.current.transform.rotation;
-            Vector3 GameCameraLocation = Camera.current.transform.position;
+            Quaternion ParentGameObjectOrientation = 
+                (parentGameObjectTransform != null) ? parentGameObjectTransform.rotation : Quaternion.identity;
+            Vector3 ParentGameObjectLocation = 
+                (parentGameObjectTransform != null) ? parentGameObjectTransform.position : Vector3.zero;
 
             if (OVRManager.tracker != null && OVRManager.tracker.isPresent && OVRManager.tracker.isEnabled)
             {
@@ -62,9 +66,6 @@ public class PSMoveUtility : MonoBehaviour
                 Quaternion TrackingCameraOrientation = Quaternion.identity;
                 float TrackingCameraHFOVDegrees = 0.0f;
                 float TrackingCameraVFOVDegrees = 0.0f;
-
-                // Get the HMD pose in player reference frame, Unity CS (LHS), Unity Units
-                Quaternion HMDOrientation = UnityEngine.VR.InputTracking.GetLocalRotation(UnityEngine.VR.VRNode.CenterEye);
 
                 // Get the camera pose in player reference frame, UE4 CS (LHS), Unreal Units
                 GetPositionalTrackingCameraProperties(
@@ -75,17 +76,15 @@ public class PSMoveUtility : MonoBehaviour
                 TrackingCameraHHalfRadians = Mathf.Deg2Rad * TrackingCameraHFOVDegrees / 2.0f;
                 TrackingCameraVHalfRadians = Mathf.Deg2Rad * TrackingCameraVFOVDegrees / 2.0f;
 
-                // HMDToGameCameraRotation = Undo HMD orientation THEN apply game camera orientation
-                Quaternion HMDToGameCameraRotation = Quaternion.Inverse(HMDOrientation) * GameCameraOrientation;
-                Quaternion TrackingCameraToGameRotation = TrackingCameraOrientation * HMDToGameCameraRotation;
+                // Apply the parent game object orientation THEN apply tracking camera orientation
+                Quaternion TrackingCameraToGameRotation = ParentGameObjectOrientation * TrackingCameraOrientation;
 
                 // Compute the tracking camera location in world space
                 Vector3 TrackingCameraWorldSpaceOrigin =
-                    HMDToGameCameraRotation * TrackingCameraOrigin + GameCameraLocation;
+                    ParentGameObjectOrientation * TrackingCameraOrigin + ParentGameObjectLocation;
 
-                // Compute the Transform to go from Rift Tracking Space (in unreal units) to World Tracking Space (in unreal units)
+                // Compute the Transform to go from Tracking Camera Space to World Space
                 TrackingSpaceToWorldSpacePosition =
-                    RHSInCMToUnityInMetersTransform() *
                     Matrix4x4.TRS(TrackingCameraWorldSpaceOrigin, TrackingCameraToGameRotation, Vector3.one);
             }
             else
@@ -97,31 +96,25 @@ public class PSMoveUtility : MonoBehaviour
                 const float k_default_tracking_near_plane_distance = 0.4f; // meters
                 const float k_default_tracking_far_plane_distance = 2.5f; // meters
 
-                // All default camera constants are in meters
-                const float MetersToUU = 1.0f;
-
                 // Pretend that the tracking camera is directly in front of the game camera
-                const float FakeTrackingCameraOffset = k_default_tracking_distance * MetersToUU;
+                const float FakeTrackingCameraOffset = k_default_tracking_distance;
                 Vector3 FakeTrackingCameraWorldSpaceOrigin =
-                    GameCameraLocation + (GameCameraOrientation * Vector3.forward) * FakeTrackingCameraOffset;
+                    ParentGameObjectLocation + (ParentGameObjectOrientation * Vector3.forward) * FakeTrackingCameraOffset;
 
                 // Get tracking frustum properties from defaults
                 TrackingCameraHHalfRadians = Mathf.Deg2Rad * k_default_tracking_hfov_degrees / 2.0f;
                 TrackingCameraVHalfRadians = Mathf.Deg2Rad * k_default_tracking_vfov_degrees / 2.0f;
-                TrackingCameraNearPlane = k_default_tracking_near_plane_distance * MetersToUU;
-                TrackingCameraFarPlane = k_default_tracking_far_plane_distance * MetersToUU;
+                TrackingCameraNearPlane = k_default_tracking_near_plane_distance;
+                TrackingCameraFarPlane = k_default_tracking_far_plane_distance;
 
-                // Compute the Transform to go from Rift Tracking Space (in unreal units) to World Tracking Space (in unreal units)
+                // Compute the Transform to go from faux tracking camera Space to World Space
                 TrackingSpaceToWorldSpacePosition =
-                    // Convert from Right Handed (e.g., OpenGL, Oculus Rift native) to Unreal Left Handed coordinate system.
-                    // Also scale cm to unreal units
-                    RHSInCMToUnityInMetersTransform() *
                     // Put in the orientation of the game camera
-                    Matrix4x4.TRS(FakeTrackingCameraWorldSpaceOrigin, GameCameraOrientation, Vector3.one);
+                    Matrix4x4.TRS(FakeTrackingCameraWorldSpaceOrigin, ParentGameObjectOrientation, Vector3.one);
             }
 
             // Transform the orientation of the controller from world space to camera space
-            OrientationTransform = GameCameraOrientation;
+            OrientationTransform = ParentGameObjectOrientation;
 
             success = true;
         }
@@ -144,7 +137,7 @@ public class PSMoveUtility : MonoBehaviour
                                   ss.orientation.z,
                                   ss.orientation.w);
 
-        position = new Vector3(ss.position.x,
+        position = new Vector3(ss.position.x, // meters
                                ss.position.y,
                                ss.position.z);
 
@@ -157,7 +150,7 @@ public class PSMoveUtility : MonoBehaviour
     }
 
     // Debug Rendering
-    public static void DebugDrawHMDFrustum()
+    public static void DebugDrawHMDFrustum(Transform parentGameObjectTransform)
     {
         Matrix4x4 TrackingToWorldTransform = Matrix4x4.identity;
         Quaternion OrientationTransform= Quaternion.identity;
@@ -167,6 +160,7 @@ public class PSMoveUtility : MonoBehaviour
         float TrackingCameraVHalfRadians= 0.0f;
 
         if (ComputeTrackingToWorldTransformsAndFrustum(
+                parentGameObjectTransform,
                 ref TrackingToWorldTransform,
                 ref OrientationTransform,
                 ref TrackingCameraNearPlane,
@@ -177,12 +171,6 @@ public class PSMoveUtility : MonoBehaviour
             float HorizontalRatio = Mathf.Tan(TrackingCameraHHalfRadians);
             float VerticalRatio = Mathf.Tan(TrackingCameraVHalfRadians);
 
-            // Tracking camera distance given in unity units.
-            // Tracking world transform goes from cm -> unity units.
-            // There covert these distance to cm.
-            TrackingCameraNearPlane *= UUToCM;
-            TrackingCameraFarPlane *= UUToCM;
-
             float HalfNearWidth = TrackingCameraNearPlane * HorizontalRatio;
             float HalfNearHeight = TrackingCameraNearPlane * VerticalRatio;
 
@@ -190,6 +178,9 @@ public class PSMoveUtility : MonoBehaviour
             float HalfFarHeight = TrackingCameraFarPlane * VerticalRatio;
 
             Vector3 Origin = TrackingToWorldTransform.GetColumn(3);
+            Vector3 XAxis = TrackingToWorldTransform.GetColumn(0);
+            Vector3 YAxis = TrackingToWorldTransform.GetColumn(1);
+            Vector3 ZAxis = TrackingToWorldTransform.GetColumn(2);
 
             Vector3 NearV0 = TrackingToWorldTransform.MultiplyPoint3x4(new Vector3(HalfNearWidth, HalfNearHeight, TrackingCameraNearPlane));
             Vector3 NearV1 = TrackingToWorldTransform.MultiplyPoint3x4(new Vector3(-HalfNearWidth, HalfNearHeight, TrackingCameraNearPlane));
@@ -215,6 +206,10 @@ public class PSMoveUtility : MonoBehaviour
             Debug.DrawLine(FarV1, FarV2, Color.yellow);
             Debug.DrawLine(FarV2, FarV3, Color.yellow);
             Debug.DrawLine(FarV3, FarV0, Color.yellow);
+
+            Debug.DrawLine(Origin, Origin + XAxis, Color.red);
+            Debug.DrawLine(Origin, Origin + YAxis, Color.green);
+            Debug.DrawLine(Origin, Origin + ZAxis, Color.blue);
         }
     }
 }

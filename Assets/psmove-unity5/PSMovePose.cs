@@ -56,24 +56,28 @@ public class PSMovePose
         UncorrectedWorldOrientation = Quaternion.identity;
     }
 
-    public void PoseUpdate(PSMoveDataContext DataContext)
+    public void PoseUpdate(PSMoveDataContext DataContext, Transform ParentGaeObjectTransform)
     {
         Matrix4x4 TrackingSpaceToWorldSpacePosition = Matrix4x4.identity;
         Quaternion OrientationTransform= Quaternion.identity;
 
         if (PSMoveUtility.ComputeTrackingToWorldTransforms(
+                ParentGaeObjectTransform,
                 ref TrackingSpaceToWorldSpacePosition,
                 ref OrientationTransform))
         {
             // The PSMove position is given in the space of the rift camera in centimeters
             Vector3 PSMPosTrackingSpace = DataContext.GetTrackingSpacePosition();
             // Transform to world space
-            Vector3 PSMPosWorldSpace = TrackingSpaceToWorldSpacePosition.MultiplyPoint3x4(PSMPosTrackingSpace);
+            Vector3 PSMPosWorldSpace = 
+                TrackingSpaceToWorldSpacePosition.MultiplyPoint3x4(
+                    PSMoveUtility.PSMoveCSToUnityCSPosition(PSMPosTrackingSpace));
 
             // The PSMove orientation is given in its native coordinate system
             Quaternion PSMOriNative = DataContext.GetTrackingSpaceOrientation();
             // Apply controller orientation first, then apply orientation transform
-            Quaternion PSMOriWorld = PSMoveUtility.PSMoveQuatToUnityQuat(PSMOriNative) * OrientationTransform;
+            Quaternion PSMOriWorld = 
+                OrientationTransform * PSMoveUtility.PSMoveQuatToUnityQuat(PSMOriNative);
 
             // Save the resulting pose, updating for internal offset/zero yaw
             UncorrectedWorldPosition = PSMPosWorldSpace;
