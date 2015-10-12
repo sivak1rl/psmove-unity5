@@ -37,6 +37,8 @@ using System;
 
 public class PSMoveHitchWatchdog : IDisposable
 {
+    public static bool EmitHitchLogging = false;
+
     public static long MILLISECONDS_PER_SECOND = 1000;
     public static long MICROSECONDS_PER_MILLISECOND = 1000;
     public static long MICROSECONDS_PER_SECOND = MICROSECONDS_PER_MILLISECOND * MILLISECONDS_PER_SECOND;
@@ -56,11 +58,14 @@ public class PSMoveHitchWatchdog : IDisposable
 
         if (TimeDeltaInMicroseconds > timeout)
         {
-            UnityEngine.Debug.LogWarning(
-                string.Format("PSMoveHitchWatchdog: HITCH DETECTED({0})! Section took {1}us (>={2}us)",
-                blockName,
-                TimeDeltaInMicroseconds,
-                timeout));
+            if (PSMoveHitchWatchdog.EmitHitchLogging)
+            {
+                UnityEngine.Debug.LogWarning(
+                    string.Format("PSMoveHitchWatchdog: HITCH DETECTED({0})! Section took {1}us (>={2}us)",
+                    blockName,
+                    TimeDeltaInMicroseconds,
+                    timeout));
+            }
         }
     }
 

@@ -53,7 +53,6 @@ public class PSMoveRawControllerData_Base
     // Data items that typically get filled by the game object (i.e., PSMoveComponent)
     // then are passed to the worker thread.
     public byte RumbleRequest; // Please make the controller rumbled
-    public bool ResetPoseRequest; // Please use the current pose as zero-pose.
     public bool CycleColourRequest; // Please change to the next available color.
 
     public PSMoveRawControllerData_Base()
@@ -68,7 +67,6 @@ public class PSMoveRawControllerData_Base
         Buttons = 0;
         TriggerValue = 0;
         RumbleRequest = 0;
-        ResetPoseRequest = false;
         CycleColourRequest = false;
         IsConnected = false;
         IsTracking = false;
@@ -112,11 +110,9 @@ public class PSMoveRawControllerData_TLS : PSMoveRawControllerData_Base
             {
                 // Post the component thread's data to the worker thread's data
                 ConcurrentData.RumbleRequest = this.RumbleRequest;
-                ConcurrentData.ResetPoseRequest = this.ResetPoseRequest;
                 ConcurrentData.CycleColourRequest = this.CycleColourRequest;
 
                 // Clear the edge triggered flags after copying to concurrent state
-                this.ResetPoseRequest = false;
                 this.CycleColourRequest = false;
             }
         }
@@ -149,11 +145,9 @@ public class PSMoveRawControllerData_TLS : PSMoveRawControllerData_Base
             {
                 // Read the component thread's data into the worker thread's data
                 this.RumbleRequest = ConcurrentData.RumbleRequest;
-                this.ResetPoseRequest = ConcurrentData.ResetPoseRequest;
                 this.CycleColourRequest = ConcurrentData.CycleColourRequest;
 
                 // Clear the edge triggered flags after copying from concurrent state
-                ConcurrentData.ResetPoseRequest = false;
                 ConcurrentData.CycleColourRequest = false;
             }
         }
@@ -226,19 +220,19 @@ public class PSMoveDataContext
         {
             // Backup controller state from the previous frame that we want to compute deltas on
             // before it gets stomped by InputManagerPostAndRead()
-            int PreviousSequenceNumber = RawControllerData.SequenceNumber;
-            byte PreviousTriggerValue = RawControllerData.TriggerValue;
-            UInt32 PreviousButtons = RawControllerData.Buttons;
+            int CurrentSequenceNumber = RawControllerData.SequenceNumber;
+            byte CurrentTriggerValue = RawControllerData.TriggerValue;
+            UInt32 CurrentButtons = RawControllerData.Buttons;
 
             // If the worker thread updated the controller, the sequence number will change
             RawControllerData.ComponentRead();
 
             // If the worker thread posted new data then the sequence number should changes
-            if (RawControllerData.SequenceNumber != PreviousSequenceNumber)
+            if (RawControllerData.SequenceNumber != CurrentSequenceNumber)
             {
                 // Actually update the previous controller state when we get new data
-                RawControllerPreviousTriggerValue = PreviousTriggerValue;
-                RawControllerPreviousButtons = PreviousButtons;
+                RawControllerPreviousTriggerValue = CurrentTriggerValue;
+                RawControllerPreviousButtons = CurrentButtons;
 
                 // Refresh the world space controller pose
                 Pose.PoseUpdate(this, ParentGameObjectTransform);
@@ -264,13 +258,11 @@ public class PSMoveDataContext
         }
     }
 
-    public void PostResetPoseRequest()
+    public void ResetYaw()
     {
         if (RawControllerData.IsValid() && RawControllerData.IsConnected)
         {
-            Pose.ResetYawSnapshot();
-            RawControllerData.ResetPoseRequest = true;
-            ComponentPost();
+            Pose.SnapshotOrientationYaw();
         }
     }
 

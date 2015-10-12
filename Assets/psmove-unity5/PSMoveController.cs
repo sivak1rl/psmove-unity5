@@ -133,11 +133,11 @@ public class PSMoveController : MonoBehaviour
     /// <summary>
     /// Converts the current orientation to the identity orientation
     /// </summary
-    public void ResetOrientation()
+    public void ResetYaw()
     {
         if (dataContext != null)
         {
-            dataContext.PostResetPoseRequest();
+            dataContext.ResetYaw();
         }
     }
 

@@ -43,6 +43,8 @@ using System.Diagnostics;
 
 public class PSMoveManager : MonoBehaviour 
 {
+    public bool EmitHitchLogging;
+
     private IntPtr psmoveapiHandle;
     private IntPtr psmoveapiTrackerHandle;
     private IntPtr cleyeHandle;
@@ -102,6 +104,7 @@ public class PSMoveManager : MonoBehaviour
 #endif
 
             ManagerInstance = this;
+            PSMoveHitchWatchdog.EmitHitchLogging = this.EmitHitchLogging;
             PSMoveWorker.StartWorkerThread();
         }
     }
@@ -392,26 +395,12 @@ class PSMoveWorker
                             // Store the button state
                             ControllerUpdateButtonState(Context.PSMoves[psmove_id], localControllerData);
 
-                            // Now read in requested changes from Component. e.g., RumbleRequest, ResetPoseRequest, CycleColourRequest
+                            // Now read in requested changes from Component. e.g., RumbleRequest, CycleColourRequest
                             localControllerData.WorkerRead();
                         
                             // Set the controller rumble (uint8; 0-255)
                             PSMoveAPI.psmove_set_rumble(Context.PSMoves[psmove_id], (char)localControllerData.RumbleRequest);
                         
-                            // See if the reset pose request has been posted by the component.
-                            // It is not recommended to use this. We will soon expose a psmove_reset_yaw function that should be used instead.
-                            // Until then, use the local yaw reset in the psmove component.
-                            if (localControllerData.ResetPoseRequest)
-                            {
-                                UnityEngine.Debug.Log("PSMoveWorker:: RESET POSE");
-
-                                PSMoveAPI.psmove_reset_orientation(Context.PSMoves[psmove_id]);
-                                PSMoveAPI.psmove_tracker_reset_location(Context.PSMoveTracker, Context.PSMoves[psmove_id]);
-                            
-                                // Clear the request flag now that we've handled the request
-                                localControllerData.ResetPoseRequest = false;
-                            }
-
                             if (localControllerData.CycleColourRequest)
                             {
                                 UnityEngine.Debug.Log("PSMoveWorker:: CYCLE COLOUR");
@@ -420,7 +409,7 @@ class PSMoveWorker
                             }
 
                             // Publish the worker data to the component. e.g., Position, Orientation, Buttons
-                            // This also publishes updated ResetPoseRequest and CycleColourRequest.
+                            // This also publishes updated CycleColourRequest.
                             localControllerData.WorkerPost();
                         }
                     }
