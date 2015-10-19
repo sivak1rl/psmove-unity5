@@ -43,7 +43,12 @@ using System.Diagnostics;
 
 public class PSMoveManager : MonoBehaviour 
 {
-    public bool EmitHitchLogging;
+    public PSMoveTracker_Camera_API CameraAPI= PSMoveTracker_Camera_API.PSMove_Camera_API_PS3EYE_LIBUSB;
+    public bool UseMultithreading= true;
+    public bool EmitHitchLogging= false;
+    public bool UseManualExposure= true;
+    [Range(0.0f, 1.0f)]
+    public float ManualExposureValue = 0.04f;
 
     private IntPtr psmoveapiHandle;
     private IntPtr psmoveapiTrackerHandle;
@@ -105,8 +110,21 @@ public class PSMoveManager : MonoBehaviour
 
             ManagerInstance = this;
             PSMoveHitchWatchdog.EmitHitchLogging = this.EmitHitchLogging;
-            PSMoveWorker.StartWorkerThread();
+            PSMoveWorker.StartWorkerThread(
+                new PSMoveWorkerSettings()
+                {
+                    CameraAPI= this.CameraAPI,
+                    Multithreaded= this.UseMultithreading,
+                    UseManualExposure = this.UseManualExposure,
+                    ManualExposureValue = this.ManualExposureValue,
+                    ApplicationDataPath = Application.dataPath
+                });
         }
+    }
+
+    void Update()
+    {
+        PSMoveWorker.UpdateWorker();
     }
 
     private void Shutdown()
@@ -206,23 +224,40 @@ class TrackingContext
     }
 };
 
+class PSMoveWorkerSettings
+{
+    public PSMoveTracker_Camera_API CameraAPI;
+    public bool Multithreaded;
+    public bool UseManualExposure;
+    public float ManualExposureValue;
+    public string ApplicationDataPath;
+}
+
 class PSMoveWorker
 {
     public static int MAX_CONTROLLERS = 5; // 5 tracking colors available: magenta, cyan, yellow, red, blue
-
+    
     public static PSMoveWorker GetWorkerThreadInstance()
     { 
         return WorkerInstance; 
     }
 
-    public static void StartWorkerThread()
+    public static void StartWorkerThread(PSMoveWorkerSettings workerSettings)
     {
         if (WorkerInstance == null)
         {
-            WorkerInstance= new PSMoveWorker();
+            WorkerInstance = new PSMoveWorker(workerSettings);
         }
 
         WorkerInstance.Start();
+    }
+
+    public static void UpdateWorker()
+    {
+        if (WorkerInstance != null && !WorkerInstance.WorkerSettings.Multithreaded)
+        {
+            WorkerInstance.ThreadUpdate();
+        }
     }
 
     public static void StopWorkerThread()
@@ -275,13 +310,19 @@ class PSMoveWorker
         }
     }
 
-    private PSMoveWorker()
+    private PSMoveWorker(PSMoveWorkerSettings workerSettings)
     {
         WorkerInstance= this;
 
-        StopSignal = new ManualResetEvent(false);
-        ExitedSignal = new ManualResetEvent(false);
-        WorkerThread = new Thread(() => { this.Run(); });
+        this.WorkerSettings = workerSettings;
+
+        if (workerSettings.Multithreaded)
+        {
+            StopSignal = new ManualResetEvent(false);
+            ExitedSignal = new ManualResetEvent(false);
+            WorkerThread = new Thread(() => { this.Run(); });
+            WorkerThread.Priority = System.Threading.ThreadPriority.AboveNormal;
+        }
 
         WorkerControllerDataArray_Concurrent = new PSMoveRawControllerData_Concurrent[MAX_CONTROLLERS];
         WorkerControllerDataArray = new PSMoveRawControllerData_TLS[MAX_CONTROLLERS];
@@ -294,23 +335,37 @@ class PSMoveWorker
     
     private void Start()
     {
-        if (!WorkerThread.IsAlive)
+        if (WorkerSettings.Multithreaded)
         {
-            WorkerThread.Start();
+            if (!WorkerThread.IsAlive)
+            {
+                WorkerThread.Start();
+            }
+        }
+        else
+        {
+            ThreadSetup();
         }
     }
 
     private void Stop()
     {
-        // Signal the thread to stop
-        StopSignal.Set();
+        if (WorkerSettings.Multithreaded)
+        {
+            // Signal the thread to stop
+            StopSignal.Set();
 
-        // Wait ten seconds for the thread to finish
-        ExitedSignal.WaitOne(10*1000);
+            // Wait ten seconds for the thread to finish
+            ExitedSignal.WaitOne(10 * 1000);
 
-        // Reset the stop and exited flags so that the thread can be restarted
-        StopSignal.Reset();
-        ExitedSignal.Reset();
+            // Reset the stop and exited flags so that the thread can be restarted
+            StopSignal.Reset();
+            ExitedSignal.Reset();
+        }
+        else
+        {
+            ThreadTeardown();
+        }
     }
 
     private void Run()
@@ -319,101 +374,14 @@ class PSMoveWorker
         {
             bool receivedStopSignal = false;
 
-            // Maintains the following psmove state on the stack
-            // * psmove tracking state
-            // * psmove fusion state
-            // * psmove controller state
-            // Tracking state is only initialized when we have a non-zero number of tracking contexts
-            TrackingContext Context = new TrackingContext(WorkerControllerDataArray);
-
-            if (PSMoveAPI.psmove_init(PSMoveAPI.PSMove_Version.PSMOVE_CURRENT_VERSION) == PSMove_Bool.PSMove_False)
-            {
-                throw new Exception("PS Move API init failed (wrong version?)");
-            }
+            ThreadSetup();
     
             //Initial wait before starting.
             Thread.Sleep(30);
 
             while (!receivedStopSignal)
             {
-                int AcquiredContextCounter_TLS;
-
-                lock(this)
-                {
-                    AcquiredContextCounter_TLS = this.AcquiredContextCounter;
-                }
-
-                // If there are component contexts active, make sure the tracking context is setup
-                if (AcquiredContextCounter_TLS > 0 && !TrackingContextIsSetup(Context))
-                {
-                    TrackingContextSetup(Context);
-                }
-                // If there are no component contexts active, make sure the tracking context is torn-down
-                else if (AcquiredContextCounter_TLS <= 0 && TrackingContextIsSetup(Context))
-                {
-                    TrackingContextTeardown(Context);
-                }
-
-                // Update controller state while tracking is active
-                if (TrackingContextIsSetup(Context))
-                {
-                    // Setup or tear down controller connections based on the number of active controllers
-                    TrackingContextUpdateControllerConnections(Context);
-
-                    // Renew the image on camera
-                    using(new PSMoveHitchWatchdog("FPSMoveWorker_UpdateImage", 50*PSMoveHitchWatchdog.MICROSECONDS_PER_MILLISECOND))
-                    {
-                        PSMoveAPI.psmove_tracker_update_image(Context.PSMoveTracker); // Sometimes libusb crashes here.
-                    }
-            
-                    // Update the raw positions on the local controller data
-                    for (int psmove_id = 0; psmove_id < Context.PSMoveCount; psmove_id++)
-                    {
-                        PSMoveRawControllerData_TLS localControllerData = WorkerControllerDataArray[psmove_id];
-                                
-                        ControllerUpdatePositions(
-                            Context.PSMoveTracker,
-                            Context.PSMoveFusion,
-                            Context.PSMoves[psmove_id],
-                            localControllerData);
-                    }
-            
-                    // Do bluetooth IO: Orientation, Buttons, Rumble
-                    for (int psmove_id = 0; psmove_id < Context.PSMoveCount; psmove_id++)
-                    {
-                        //TODO: Is it necessary to keep polling until no frames are left?
-                        while (PSMoveAPI.psmove_poll(Context.PSMoves[psmove_id]) > 0)
-                        {
-                            PSMoveRawControllerData_TLS localControllerData = WorkerControllerDataArray[psmove_id];
-                        
-                            // Update the controller status (via bluetooth)
-                            PSMoveAPI.psmove_poll(Context.PSMoves[psmove_id]);  // Necessary to poll yet again?
-                        
-                            // Store the controller orientation
-                            ControllerUpdateOrientations(Context.PSMoves[psmove_id], localControllerData);
-                        
-                            // Store the button state
-                            ControllerUpdateButtonState(Context.PSMoves[psmove_id], localControllerData);
-
-                            // Now read in requested changes from Component. e.g., RumbleRequest, CycleColourRequest
-                            localControllerData.WorkerRead();
-                        
-                            // Set the controller rumble (uint8; 0-255)
-                            PSMoveAPI.psmove_set_rumble(Context.PSMoves[psmove_id], (char)localControllerData.RumbleRequest);
-                        
-                            if (localControllerData.CycleColourRequest)
-                            {
-                                UnityEngine.Debug.Log("PSMoveWorker:: CYCLE COLOUR");
-                                PSMoveAPI.psmove_tracker_cycle_color(Context.PSMoveTracker, Context.PSMoves[psmove_id]);
-                                localControllerData.CycleColourRequest = false;
-                            }
-
-                            // Publish the worker data to the component. e.g., Position, Orientation, Buttons
-                            // This also publishes updated CycleColourRequest.
-                            localControllerData.WorkerPost();
-                        }
-                    }
-                }
+                ThreadUpdate();
 
                 // See if the main thread signaled us to stop
                 if (StopSignal.WaitOne(0))
@@ -427,11 +395,7 @@ class PSMoveWorker
                 }
             }
 
-            // If there are no component contexts active, make sure the tracking context is torn-down
-            if (TrackingContextIsSetup(Context))
-            {
-                TrackingContextTeardown(Context);
-            }
+            ThreadTeardown();
         }
         catch (Exception e)
         {
@@ -444,8 +408,120 @@ class PSMoveWorker
         }
     }
 
+    public void ThreadSetup()
+    {
+        // Maintains the following psmove state on the stack
+        // * psmove tracking state
+        // * psmove fusion state
+        // * psmove controller state
+        // Tracking state is only initialized when we have a non-zero number of tracking contexts
+        Context = new TrackingContext(WorkerControllerDataArray);
+
+        if (PSMoveAPI.psmove_init(PSMoveAPI.PSMove_Version.PSMOVE_CURRENT_VERSION) == PSMove_Bool.PSMove_False)
+        {
+            throw new Exception("PS Move API init failed (wrong version?)");
+        }
+    }
+
+    public void ThreadUpdate()
+    {
+        using (new PSMoveHitchWatchdog("FPSMoveWorker_ThreadUpdate", 34 * PSMoveHitchWatchdog.MICROSECONDS_PER_MILLISECOND))
+        {
+            int AcquiredContextCounter_TLS;
+
+            lock (this)
+            {
+                AcquiredContextCounter_TLS = this.AcquiredContextCounter;
+            }
+
+            // If there are component contexts active, make sure the tracking context is setup
+            if (AcquiredContextCounter_TLS > 0 && !TrackingContextIsSetup(Context))
+            {
+                TrackingContextSetup(WorkerSettings, Context);
+            }
+            // If there are no component contexts active, make sure the tracking context is torn-down
+            else if (AcquiredContextCounter_TLS <= 0 && TrackingContextIsSetup(Context))
+            {
+                TrackingContextTeardown(Context);
+            }
+
+            // Update controller state while tracking is active
+            if (TrackingContextIsSetup(Context))
+            {
+                // Setup or tear down controller connections based on the number of active controllers
+                TrackingContextUpdateControllerConnections(Context);
+
+                // Renew the image on camera
+                using (new PSMoveHitchWatchdog("FPSMoveWorker_UpdateImage", 33 * PSMoveHitchWatchdog.MICROSECONDS_PER_MILLISECOND))
+                {
+                    PSMoveAPI.psmove_tracker_update_image(Context.PSMoveTracker); // Sometimes libusb crashes here.
+                }
+
+                // Update the raw positions on the local controller data
+                for (int psmove_id = 0; psmove_id < Context.PSMoveCount; psmove_id++)
+                {
+                    PSMoveRawControllerData_TLS localControllerData = WorkerControllerDataArray[psmove_id];
+
+                    ControllerUpdatePositions(
+                        Context.PSMoveTracker,
+                        Context.PSMoveFusion,
+                        Context.PSMoves[psmove_id],
+                        localControllerData);
+                }
+
+                // Do bluetooth IO: Orientation, Buttons, Rumble
+                for (int psmove_id = 0; psmove_id < Context.PSMoveCount; psmove_id++)
+                {
+                    //TODO: Is it necessary to keep polling until no frames are left?
+                    while (PSMoveAPI.psmove_poll(Context.PSMoves[psmove_id]) > 0)
+                    {
+                        PSMoveRawControllerData_TLS localControllerData = WorkerControllerDataArray[psmove_id];
+
+                        // Update the controller status (via bluetooth)
+                        PSMoveAPI.psmove_poll(Context.PSMoves[psmove_id]);  // Necessary to poll yet again?
+
+                        // Store the controller orientation
+                        ControllerUpdateOrientations(Context.PSMoves[psmove_id], localControllerData);
+
+                        // Store the button state
+                        ControllerUpdateButtonState(Context.PSMoves[psmove_id], localControllerData);
+
+                        // Now read in requested changes from Component. e.g., RumbleRequest, CycleColourRequest
+                        localControllerData.WorkerRead();
+
+                        // Set the controller rumble (uint8; 0-255)
+                        PSMoveAPI.psmove_set_rumble(Context.PSMoves[psmove_id], (char)localControllerData.RumbleRequest);
+
+                        if (localControllerData.CycleColourRequest)
+                        {
+                            UnityEngine.Debug.Log("PSMoveWorker:: CYCLE COLOUR");
+                            PSMoveAPI.psmove_tracker_cycle_color(Context.PSMoveTracker, Context.PSMoves[psmove_id]);
+                            localControllerData.CycleColourRequest = false;
+                        }
+
+                        // Publish the worker data to the component. e.g., Position, Orientation, Buttons
+                        // This also publishes updated CycleColourRequest.
+                        localControllerData.WorkerPost();
+                    }
+                }
+            }
+        }
+    }
+
+    public void ThreadTeardown()
+    {
+        // If there are no component contexts active, make sure the tracking context is torn-down
+        if (TrackingContextIsSetup(Context))
+        {
+            TrackingContextTeardown(Context);
+        }
+        Context = null;
+    }
+
     #region Private Tracking Context Methods
-    private static bool TrackingContextSetup(TrackingContext context)
+    private static bool TrackingContextSetup(
+        PSMoveWorkerSettings WorkerSettings,
+        TrackingContext context)
     {
         bool success = true;
 
@@ -459,11 +535,24 @@ class PSMoveWorker
         {
             PSMoveAPI.PSMoveTrackerSettings settings = new PSMoveAPI.PSMoveTrackerSettings();
             PSMoveAPI.psmove_tracker_settings_set_default(ref settings);
+            
             settings.color_mapping_max_age = 0; // Don't used cached color mapping file
-            settings.exposure_mode = PSMoveTracker_Exposure.Exposure_LOW;
+
+            if (WorkerSettings.UseManualExposure)
+            {
+                settings.exposure_mode = PSMoveTracker_Exposure.Exposure_MANUAL;
+                settings.camera_exposure = 
+                    (int)(Math.Max(Math.Min(WorkerSettings.ManualExposureValue, 1.0f), 0.0f) * 65535.0f);
+            }
+            else
+            {
+                settings.exposure_mode = PSMoveTracker_Exposure.Exposure_LOW;
+            }
+
             settings.use_fitEllipse = 1;
             settings.camera_mirror = PSMove_Bool.PSMove_True;
-
+            settings.camera_api = WorkerSettings.CameraAPI;
+            settings.path_to_cleye_server_exe = WorkerSettings.ApplicationDataPath + "/Plugins/x86_64";
             context.PSMoveTracker = PSMoveAPI.psmove_tracker_new_with_settings(ref settings);
         }
 
@@ -690,6 +779,9 @@ class PSMoveWorker
 
     private static PSMoveWorker WorkerInstance;
 
+    // Settings passed in from the main thread
+    public PSMoveWorkerSettings WorkerSettings;
+
     // Number of active data contexts
     private int AcquiredContextCounter;
 
@@ -702,6 +794,9 @@ class PSMoveWorker
 
     // Thread local version of the concurrent controller and shared data
     private PSMoveRawControllerData_TLS[] WorkerControllerDataArray;
+
+    // Maintains all of the tracking camera and controller state
+    private TrackingContext Context;
 
     // Threading State
     private Thread WorkerThread;

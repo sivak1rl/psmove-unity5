@@ -111,16 +111,17 @@ public enum PSMoveTracker_Status
 };
 
 /*! Known camera types. Used for calculating focal length when calibration not present. */
-public enum PSMoveTracker_Camera_type
+public enum PSMoveTracker_Focal_Length
 {
-    PSMove_Camera_PS3EYE_BLUEDOT,
-    PSMove_Camera_PS3EYE_REDDOT,
-    PSMove_Camera_Unknown
+    PSMove_Focal_Length_PS3EYE_BLUEDOT,
+    PSMove_Focal_Length_PS3EYE_REDDOT,
+    PSMove_Focal_Length_Default
 };
 
 /*! Exposure modes */
 public enum PSMoveTracker_Exposure
 {
+    Exposure_MANUAL, /*!< Explicitly set the exposure value rather than auto adjust */
     Exposure_LOW, /*!< Very low exposure: Good tracking, no environment visible */
     Exposure_MEDIUM, /*!< Middle ground: Good tracking, environment visibile */
     Exposure_HIGH, /*!< High exposure: Fair tracking, but good environment */
@@ -138,8 +139,16 @@ public enum PSMoveTracker_ErrorCode
 {
     PSMove_Camera_Error_None,
     PSMove_Camera_Not_Found,
+    PSMove_Camera_API_Initialize_Failure,
     PSMove_Camera_USB_Open_Failure,
     PSMove_Camera_Query_Frame_Failure,
+};
+
+public enum PSMoveTracker_Camera_API
+{
+    PSMove_Camera_API_PS3EYE_LIBUSB,
+    PSMove_Camera_API_PS3EYE_CLEYE,
+    PSMove_Camera_API_OPENCV
 };
 
 public class PSMoveAPI
@@ -253,7 +262,7 @@ public class PSMoveAPI
     };
 
     /*!< Structure for storing tracker settings */
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
     public struct PSMoveTrackerSettings
     {
         /* Camera Controls*/
@@ -266,7 +275,10 @@ public class PSMoveAPI
         public int camera_exposure;                        /* [(255 * 15) / 0xFFFF] [0,0xFFFF] */
         public int camera_brightness;                      /* [0] [0,0xFFFF] */
         public PSMove_Bool camera_mirror;             /* [PSMove_False] mirror camera image horizontally */
-        public PSMoveTracker_Camera_type camera_type; /* [PSMove_Camera_PS3EYE_BLUEDOT] camera type. Used for focal length when OpenCV calib missing */
+        public PSMoveTracker_Focal_Length camera_type; /* [PSMove_Camera_PS3EYE_BLUEDOT] camera type. Used for focal length when OpenCV calib missing */
+        public PSMoveTracker_Camera_API camera_api;   /* [PSMove_Camera_API_PS3EYE_LIBUSB] camera api. Used to decide which camera API is used to pull tracking frames. */
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)] 
+        public string path_to_cleye_server_exe;
 
         /* Settings for camera calibration process */
         public PSMoveTracker_Exposure exposure_mode;  /* [Exposure_LOW] exposure mode for setting target luminance */
