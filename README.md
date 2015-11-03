@@ -9,7 +9,7 @@
                                                                      |___/       
 </pre>
 
-Plugin for using PSMove as input in Unity 5 PRO
+Plugin for using PSMove as input in Unity 5 ~~PRO~~ (I think this will work in free Unity 5. After looking at the docs it looks like the free version allows you to marshall native API calls, but this needs testing).
 
 Check out this [video](https://www.youtube.com/watch?v=HRLblxNbAEI&feature=youtu.be) to see some tracking in action.
 
