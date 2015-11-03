@@ -41,12 +41,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
 
+public enum PSMoveTrackingColor
+{
+    magenta = 0,
+    cyan = 1,
+    yellow = 2,
+    red = 3,
+    green = 4
+};
+
 public class PSMoveManager : MonoBehaviour 
 {
     public PSMoveTracker_Camera_API CameraAPI= PSMoveTracker_Camera_API.PSMove_Camera_API_PS3EYE_LIBUSB;
     public bool UseMultithreading= true;
     public bool EmitHitchLogging= false;
     public bool UseManualExposure= true;
+    public PSMoveTrackingColor InitialTrackingColor = PSMoveTrackingColor.magenta;
     [Range(0.0f, 1.0f)]
     public float ManualExposureValue = 0.04f;
 
@@ -117,6 +127,7 @@ public class PSMoveManager : MonoBehaviour
                     Multithreaded= this.UseMultithreading,
                     UseManualExposure = this.UseManualExposure,
                     ManualExposureValue = this.ManualExposureValue,
+                    InitialTrackingColor = this.InitialTrackingColor,
                     ApplicationDataPath = Application.dataPath
                 });
         }
@@ -230,6 +241,7 @@ class PSMoveWorkerSettings
     public bool Multithreaded;
     public bool UseManualExposure;
     public float ManualExposureValue;
+    public PSMoveTrackingColor InitialTrackingColor;
     public string ApplicationDataPath;
 }
 
@@ -553,6 +565,7 @@ class PSMoveWorker
             settings.camera_mirror = PSMove_Bool.PSMove_True;
             settings.camera_api = WorkerSettings.CameraAPI;
             settings.path_to_cleye_server_exe = WorkerSettings.ApplicationDataPath + "/Plugins/x86_64";
+            settings.color_list_start_ind = (int)WorkerSettings.InitialTrackingColor;
             context.PSMoveTracker = PSMoveAPI.psmove_tracker_new_with_settings(ref settings);
         }
 

@@ -317,11 +317,15 @@ public class PSMoveAPI
         public float color_update_quality_t2;              /* [0.2] maximum allowed change of the radius in percent, compared to the last estimated radius */
         public float color_update_quality_t3;              /* [6.f] minimum radius */
 
+        public PSMove_Bool color_save_colormapping;   /* [PSMove_True] whether or not to save the result of the color calibration to disk. */
+        public int color_list_start_ind;                   /* [0] The index in [magenta, cyan, yellow, red, green/blue] to start searching for available color. */
+
         /* CBB-specific tracker parameters */
         public float xorigin_cm;                           /* [0.f] x-distance to subtract from calculated position */
         public float yorigin_cm;                           /* [0.f] y-distance to subtract from calculated position */
         public float zorigin_cm;                           /* [0.f] z-distance to subtract from calculated position */
     }
+
 
     [DllImport("psmoveapi_tracker.dll")]
     public static extern IntPtr psmove_tracker_new();
