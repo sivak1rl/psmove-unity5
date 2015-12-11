@@ -204,7 +204,7 @@ public class PSMoveAPI
     public static extern int psmove_update_leds(IntPtr move);
 
     [DllImport("psmoveapi.dll")]
-    public static extern void psmove_set_rumble(IntPtr move, char rumble);
+    public static extern void psmove_set_rumble(IntPtr move, System.Byte rumble);
 
     [DllImport("psmoveapi.dll")]
     public static extern uint psmove_poll(IntPtr move);

@@ -59,6 +59,7 @@ public class PSMoveManager : MonoBehaviour
     public PSMoveTrackingColor InitialTrackingColor = PSMoveTrackingColor.magenta;
     [Range(0.0f, 1.0f)]
     public float ManualExposureValue = 0.04f;
+    public bool DisableTracking = false;
 
     private IntPtr psmoveapiHandle;
     private IntPtr psmoveapiTrackerHandle;
@@ -128,6 +129,7 @@ public class PSMoveManager : MonoBehaviour
                     UseManualExposure = this.UseManualExposure,
                     ManualExposureValue = this.ManualExposureValue,
                     InitialTrackingColor = this.InitialTrackingColor,
+                    DisableTracking = this.DisableTracking,
                     ApplicationDataPath = Application.dataPath
                 });
         }
@@ -195,9 +197,11 @@ public class PSMoveManager : MonoBehaviour
 
 // TrackingContext contains references to the psmoveapi tracker and fusion objects, the controllers,
 // and references to the shared (controller independent) data and the controller(s) data.
-class TrackingContext
+class WorkerContext
 {
     public static float CONTROLLER_COUNT_POLL_INTERVAL = 1000.0f; // milliseconds
+
+    public PSMoveWorkerSettings WorkerSettings;
 
     public PSMoveRawControllerData_TLS[] WorkerControllerDataArray;
 
@@ -212,8 +216,9 @@ class TrackingContext
     public IntPtr PSMoveFusion; // PSMoveFusion*
     
     // Constructor
-    public TrackingContext(PSMoveRawControllerData_TLS[] controllerDataArray)
+    public WorkerContext(PSMoveRawControllerData_TLS[] controllerDataArray, PSMoveWorkerSettings settings)
     {
+        WorkerSettings= settings;
         WorkerControllerDataArray= controllerDataArray;
         
         // This timestamp is used to throttle how frequently we poll for controller count changes
@@ -242,6 +247,7 @@ class PSMoveWorkerSettings
     public bool UseManualExposure;
     public float ManualExposureValue;
     public PSMoveTrackingColor InitialTrackingColor;
+    public bool DisableTracking;
     public string ApplicationDataPath;
 }
 
@@ -427,7 +433,7 @@ class PSMoveWorker
         // * psmove fusion state
         // * psmove controller state
         // Tracking state is only initialized when we have a non-zero number of tracking contexts
-        Context = new TrackingContext(WorkerControllerDataArray);
+        Context = new WorkerContext(WorkerControllerDataArray, WorkerSettings);
 
         if (PSMoveAPI.psmove_init(PSMoveAPI.PSMove_Version.PSMOVE_CURRENT_VERSION) == PSMove_Bool.PSMove_False)
         {
@@ -447,21 +453,24 @@ class PSMoveWorker
             }
 
             // If there are component contexts active, make sure the tracking context is setup
-            if (AcquiredContextCounter_TLS > 0 && !TrackingContextIsSetup(Context))
+            if (!WorkerSettings.DisableTracking)
             {
-                TrackingContextSetup(WorkerSettings, Context);
-            }
-            // If there are no component contexts active, make sure the tracking context is torn-down
-            else if (AcquiredContextCounter_TLS <= 0 && TrackingContextIsSetup(Context))
-            {
-                TrackingContextTeardown(Context);
+                if (AcquiredContextCounter_TLS > 0 && !WorkerContextIsTrackingSetup(Context))
+                {
+                    WorkerContextSetupTracking(WorkerSettings, Context);
+                }
+                // If there are no component contexts active, make sure the tracking context is torn-down
+                else if (AcquiredContextCounter_TLS <= 0 && WorkerContextIsTrackingSetup(Context))
+                {
+                    WorkerContextTeardown(Context);
+                }
             }
 
-            // Update controller state while tracking is active
-            if (TrackingContextIsSetup(Context))
+            // Update controller state while tracking is active (or if we don't care about tracking)
+            if (WorkerSettings.DisableTracking || WorkerContextIsTrackingSetup(Context))
             {
                 // Setup or tear down controller connections based on the number of active controllers
-                TrackingContextUpdateControllerConnections(Context);
+                WorkerContextUpdateControllerConnections(Context);
 
                 // Renew the image on camera
                 using (new PSMoveHitchWatchdog("FPSMoveWorker_UpdateImage", 33 * PSMoveHitchWatchdog.MICROSECONDS_PER_MILLISECOND))
@@ -474,11 +483,18 @@ class PSMoveWorker
                 {
                     PSMoveRawControllerData_TLS localControllerData = WorkerControllerDataArray[psmove_id];
 
-                    ControllerUpdatePositions(
-                        Context.PSMoveTracker,
-                        Context.PSMoveFusion,
-                        Context.PSMoves[psmove_id],
-                        localControllerData);
+                    if (!Context.WorkerSettings.DisableTracking)
+                    {
+                        ControllerUpdatePositions(
+                            Context.PSMoveTracker,
+                            Context.PSMoveFusion,
+                            Context.PSMoves[psmove_id],
+                            localControllerData);
+                    }
+                    else
+                    {
+                        localControllerData.IsTracking = false;
+                    }
                 }
 
                 // Do bluetooth IO: Orientation, Buttons, Rumble
@@ -502,12 +518,23 @@ class PSMoveWorker
                         localControllerData.WorkerRead();
 
                         // Set the controller rumble (uint8; 0-255)
-                        PSMoveAPI.psmove_set_rumble(Context.PSMoves[psmove_id], (char)localControllerData.RumbleRequest);
+                        PSMoveAPI.psmove_set_rumble(Context.PSMoves[psmove_id], localControllerData.RumbleRequest);
+
+                        // Push the updated rumble state to the controller
+                        PSMoveAPI.psmove_update_leds(Context.PSMoves[psmove_id]);
 
                         if (localControllerData.CycleColourRequest)
                         {
-                            UnityEngine.Debug.Log("PSMoveWorker:: CYCLE COLOUR");
-                            PSMoveAPI.psmove_tracker_cycle_color(Context.PSMoveTracker, Context.PSMoves[psmove_id]);
+                            if (!Context.WorkerSettings.DisableTracking)
+                            {
+                                UnityEngine.Debug.Log("PSMoveWorker:: CYCLE COLOUR");
+                                PSMoveAPI.psmove_tracker_cycle_color(Context.PSMoveTracker, Context.PSMoves[psmove_id]);
+                            }
+                            else
+                            {
+                                UnityEngine.Debug.LogWarning("PSMoveWorker:: CYCLE COLOUR ignored! Tracking is disabled!");
+                            }
+
                             localControllerData.CycleColourRequest = false;
                         }
 
@@ -522,18 +549,14 @@ class PSMoveWorker
 
     public void ThreadTeardown()
     {
-        // If there are no component contexts active, make sure the tracking context is torn-down
-        if (TrackingContextIsSetup(Context))
-        {
-            TrackingContextTeardown(Context);
-        }
+        WorkerContextTeardown(Context);
         Context = null;
     }
 
     #region Private Tracking Context Methods
-    private static bool TrackingContextSetup(
+    private static bool WorkerContextSetupTracking(
         PSMoveWorkerSettings WorkerSettings,
-        TrackingContext context)
+        WorkerContext context)
     {
         bool success = true;
 
@@ -609,23 +632,23 @@ class PSMoveWorker
 
         if (!success)
         {
-            TrackingContextTeardown(context);
+            WorkerContextTeardown(context);
         }
 
         return success;
     }
 
-    private static bool TrackingContextIsSetup(TrackingContext context)
+    private static bool WorkerContextIsTrackingSetup(WorkerContext context)
     {
         return context.PSMoveTracker != IntPtr.Zero && context.PSMoveFusion != IntPtr.Zero;
     }
 
-    private static bool TrackingContextUpdateControllerConnections(TrackingContext context)
+    private static bool WorkerContextUpdateControllerConnections(WorkerContext context)
     {
         bool controllerCountChanged = false;
-        System.Diagnostics.Debug.Assert(TrackingContextIsSetup(context));
+        System.Diagnostics.Debug.Assert(WorkerContextIsTrackingSetup(context));
     
-        if (context.moveCountCheckTimer.ElapsedMilliseconds >= TrackingContext.CONTROLLER_COUNT_POLL_INTERVAL)
+        if (context.moveCountCheckTimer.ElapsedMilliseconds >= WorkerContext.CONTROLLER_COUNT_POLL_INTERVAL)
         {
             // Update the number
             int newcount = PSMoveAPI.psmove_count_connected();
@@ -662,7 +685,8 @@ class PSMoveWorker
                         }
                     }
 
-                    if (context.PSMoves[psmove_id] != IntPtr.Zero && 
+                    if (!context.WorkerSettings.DisableTracking &&
+                        context.PSMoves[psmove_id] != IntPtr.Zero && 
                         context.WorkerControllerDataArray[psmove_id].IsEnabled == false)
                     {
                         // The controller is connected, but not tracking yet
@@ -700,7 +724,7 @@ class PSMoveWorker
         return controllerCountChanged;
     }
 
-    private static void TrackingContextTeardown(TrackingContext context)
+    private static void WorkerContextTeardown(WorkerContext context)
     {
         UnityEngine.Debug.Log("Tearing down PSMove Tracking Context");
     
@@ -809,7 +833,7 @@ class PSMoveWorker
     private PSMoveRawControllerData_TLS[] WorkerControllerDataArray;
 
     // Maintains all of the tracking camera and controller state
-    private TrackingContext Context;
+    private WorkerContext Context;
 
     // Threading State
     private Thread WorkerThread;

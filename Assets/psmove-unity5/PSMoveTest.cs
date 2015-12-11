@@ -36,6 +36,8 @@ using System.Collections.Generic;
 
 public class PSMoveTest : MonoBehaviour 
 {
+    public bool HideWhenUntracked = false;
+
     private PSMoveController moveComponent;
     private MeshRenderer rendererComponent;
 
@@ -65,7 +67,7 @@ public class PSMoveTest : MonoBehaviour
         moveComponent.OnButtonMoveReleased += move_OnButtonMoveReleased;
 
         // Don't show the controller model until we get tracking
-        if (rendererComponent != null)
+        if (HideWhenUntracked && rendererComponent != null)
         {
             rendererComponent.enabled = false;
         }
@@ -75,7 +77,7 @@ public class PSMoveTest : MonoBehaviour
     {
         if (moveComponent != null)
         {
-            if (rendererComponent != null)
+            if (HideWhenUntracked && rendererComponent != null)
             {
                 if (moveComponent.IsTracking && !rendererComponent.enabled)
                 {

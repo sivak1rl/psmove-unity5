@@ -227,7 +227,10 @@ public class PSMoveController : MonoBehaviour
             OnButtonMoveReleased(this, EventArgs.Empty);
 
         // Update the transform of this game object based on the new pose
-        this.gameObject.transform.position = dataContext.Pose.WorldPosition;
+        if (dataContext.GetIsTracking())
+        {
+            this.gameObject.transform.position = dataContext.Pose.WorldPosition;
+        }
         this.gameObject.transform.rotation = dataContext.Pose.WorldOrientation;
 
         // Show the HMD frus
