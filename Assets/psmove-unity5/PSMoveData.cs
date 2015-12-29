@@ -233,10 +233,10 @@ public class PSMoveDataContext
                 // Actually update the previous controller state when we get new data
                 RawControllerPreviousTriggerValue = CurrentTriggerValue;
                 RawControllerPreviousButtons = CurrentButtons;
-
-                // Refresh the world space controller pose
-                Pose.PoseUpdate(this, ParentGameObjectTransform);
             }
+
+            // Refresh the world space controller pose
+            Pose.PoseUpdate(this, ParentGameObjectTransform);
         }
     }
 

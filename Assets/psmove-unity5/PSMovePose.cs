@@ -56,40 +56,39 @@ public class PSMovePose
         UncorrectedWorldOrientation = Quaternion.identity;
     }
 
-    public void PoseUpdate(PSMoveDataContext DataContext, Transform ParentGaeObjectTransform)
+    public void PoseUpdate(PSMoveDataContext DataContext, Transform ParentGameObjectTransform)
     {
         Matrix4x4 TrackingSpaceToWorldSpacePosition = Matrix4x4.identity;
         Quaternion OrientationTransform= Quaternion.identity;
 
-        if (PSMoveUtility.ComputeTrackingToWorldTransforms(
-                ParentGaeObjectTransform,
-                ref TrackingSpaceToWorldSpacePosition,
-                ref OrientationTransform))
+        PSMoveUtility.ComputeTrackingToWorldTransforms(
+            ParentGameObjectTransform,
+            ref TrackingSpaceToWorldSpacePosition,
+            ref OrientationTransform);
+
+        if (DataContext.GetIsTracking())
         {
-            if (DataContext.GetIsTracking())
-            {
-                // The PSMove position is given in the space of the rift camera in centimeters
-                Vector3 PSMPosTrackingSpace = DataContext.GetTrackingSpacePosition();
-                // Transform to world space
-                Vector3 PSMPosWorldSpace =
-                    TrackingSpaceToWorldSpacePosition.MultiplyPoint3x4(
-                        PSMoveUtility.PSMoveCSToUnityCSPosition(PSMPosTrackingSpace));
+            // The PSMove position is given in the space of the rift camera in centimeters
+            Vector3 PSMPosTrackingSpace = DataContext.GetTrackingSpacePosition();
+            // Transform to world space
+            Vector3 PSMPosWorldSpace =
+                TrackingSpaceToWorldSpacePosition.MultiplyPoint3x4(
+                    PSMoveUtility.PSMoveCSToUnityCSPosition(PSMPosTrackingSpace));
 
-                // Save the resulting position, updating for internal offset
-                UncorrectedWorldPosition = PSMPosWorldSpace;
-                WorldPosition = PSMPosWorldSpace - ZeroPosition;
-            }
-
-            // The PSMove orientation is given in its native coordinate system
-            Quaternion PSMOriNative = DataContext.GetTrackingSpaceOrientation();
-            // Apply controller orientation first, then apply orientation transform
-            Quaternion PSMOriWorld = 
-                OrientationTransform * PSMoveUtility.PSMoveQuatToUnityQuat(PSMOriNative);
-
-            // Save the resulting pose, updating for internal zero yaw
-            UncorrectedWorldOrientation = PSMOriWorld;
-            WorldOrientation = ZeroYaw * PSMOriWorld;
+            // Save the resulting position, updating for internal offset
+            UncorrectedWorldPosition = PSMPosWorldSpace;
+            WorldPosition = PSMPosWorldSpace - ZeroPosition;
         }
+
+        // The PSMove orientation is given in its native coordinate system
+        Quaternion PSMOriNative = DataContext.GetTrackingSpaceOrientation();
+        // Apply controller orientation first, then apply orientation transform
+        Quaternion PSMOriWorld =
+            OrientationTransform * PSMoveUtility.PSMoveQuatToUnityQuat(PSMOriNative);
+
+        // Save the resulting pose, updating for internal zero yaw
+        UncorrectedWorldOrientation = PSMOriWorld;
+        WorldOrientation = ZeroYaw * PSMOriWorld;
     }
 
     public void ResetYawSnapshot()
