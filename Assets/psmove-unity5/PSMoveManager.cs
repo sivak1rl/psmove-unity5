@@ -56,6 +56,7 @@ public class PSMoveManager : MonoBehaviour
     public bool UseMultithreading= true;
     public bool EmitHitchLogging= false;
     public bool UseManualExposure= true;
+    public PSMoveTracker_Smoothing_Type Filter3DType = PSMoveTracker_Smoothing_Type.Smoothing_LowPass;
     public PSMoveTrackingColor InitialTrackingColor = PSMoveTrackingColor.magenta;
     [Range(0.0f, 1.0f)]
     public float ManualExposureValue = 0.04f;
@@ -129,6 +130,7 @@ public class PSMoveManager : MonoBehaviour
                     UseManualExposure = this.UseManualExposure,
                     ManualExposureValue = this.ManualExposureValue,
                     InitialTrackingColor = this.InitialTrackingColor,
+                    Filter3DType= this.Filter3DType,
                     DisableTracking = this.DisableTracking,
                     ApplicationDataPath = Application.dataPath
                 });
@@ -247,6 +249,7 @@ class PSMoveWorkerSettings
     public bool UseManualExposure;
     public float ManualExposureValue;
     public PSMoveTrackingColor InitialTrackingColor;
+    public PSMoveTracker_Smoothing_Type Filter3DType;
     public bool DisableTracking;
     public string ApplicationDataPath;
 }
@@ -600,7 +603,7 @@ class PSMoveWorker
             PSMoveAPI.psmove_tracker_get_smoothing_settings(context.PSMoveTracker, ref smoothing_settings);
             smoothing_settings.filter_do_2d_r = 0;
             smoothing_settings.filter_do_2d_xy = 0;
-            smoothing_settings.filter_3d_type = PSMoveTracker_Smoothing_Type.Smoothing_Kalman;
+            smoothing_settings.filter_3d_type = WorkerSettings.Filter3DType;
             PSMoveAPI.psmove_tracker_set_smoothing_settings(context.PSMoveTracker, ref smoothing_settings);
 
             PSMoveAPI.psmove_tracker_get_size(context.PSMoveTracker, ref context.TrackerWidth, ref context.TrackerHeight);
