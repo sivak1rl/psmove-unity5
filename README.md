@@ -9,11 +9,14 @@
                                                                      |___/       
 </pre>
 
-Plugin for using PSMove as input in Unity 5 ~~PRO~~ (I think this will work in free Unity 5. After looking at the docs it looks like the free version allows you to marshall native API calls, but this needs testing).
+Plugin for using PSMove as input in Unity 5.
 
 Check out this [video](https://www.youtube.com/watch?v=HRLblxNbAEI&feature=youtu.be) to see some tracking in action.
 
 This is adapted from the [psmove-ue4](https://github.com/cboulay/psmove-ue4) plugin and inspired by [UniMove](https://github.com/CopenhagenGameCollective/UniMove).
+
+#Win7 NOTE
+Win7 users. Please use the version of this library from the [win7 branch](https://github.com/brendanwalker/psmove-unity5/tree/win7). There is currently an issue with HIDAPI in Win7 that causes the controller pairing utility not to work. I have a hacky fix for this in the win7 branch, but haven't had a chance yet to clean it up and merge it back into master in a way that won't break win8+ yet.
 
 # Overview
 This library is inteded as a way for Unity5 Pro developers to iterate at their desk on tracked VR controller games/applications when you have limited or no access other advanced tracking solutions in the office. The PS3 Move controller on the PC has tracking that isn't as good as Valve's or Oculus' solution, but with some filtering, it's good enough for developer iteration, and it's super [cheap](http://www.amazon.com/Playstation-Move-Motion-Controller-3/dp/B002I0J51U). 
