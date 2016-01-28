@@ -52,10 +52,9 @@ public enum PSMoveTrackingColor
 
 public class PSMoveManager : MonoBehaviour 
 {
-    public PSMoveTracker_Camera_API CameraAPI= PSMoveTracker_Camera_API.PSMove_Camera_API_PS3EYE_LIBUSB;
     public bool UseMultithreading= true;
     public bool EmitHitchLogging= false;
-    public bool UseManualExposure= true;
+    public bool UseManualExposure= false;
     public PSMoveTracker_Smoothing_Type Filter3DType = PSMoveTracker_Smoothing_Type.Smoothing_LowPass;
     public PSMoveTrackingColor InitialTrackingColor = PSMoveTrackingColor.magenta;
     [Range(0.0f, 1.0f)]
@@ -64,7 +63,6 @@ public class PSMoveManager : MonoBehaviour
 
     private IntPtr psmoveapiHandle;
     private IntPtr psmoveapiTrackerHandle;
-    private IntPtr cleyeHandle;
 
     private static PSMoveManager ManagerInstance;
 
@@ -108,13 +106,11 @@ public class PSMoveManager : MonoBehaviour
 #if LOAD_DLL_MANUALLY
             if (IntPtr.Size == 8)
             {
-                cleyeHandle = IntPtr.Zero;
                 psmoveapiHandle = LoadLib("Assets/Plugins/x86_64/psmoveapi.dll");
                 psmoveapiTrackerHandle = LoadLib("Assets/Plugins/x86_64/psmoveapi_tracker.dll");
             }
             else
             {
-                cleyeHandle = LoadLib("c:/Windows/SysWOW64/CLEyeMulticam.dll");
                 psmoveapiHandle = LoadLib("Assets/Plugins/x86/psmoveapi.dll");
                 psmoveapiTrackerHandle = LoadLib("Assets/Plugins/x86/psmoveapi_tracker.dll");
             }
@@ -125,7 +121,6 @@ public class PSMoveManager : MonoBehaviour
             PSMoveWorker.StartWorkerThread(
                 new PSMoveWorkerSettings()
                 {
-                    CameraAPI= this.CameraAPI,
                     Multithreaded= this.UseMultithreading,
                     UseManualExposure = this.UseManualExposure,
                     ManualExposureValue = this.ManualExposureValue,
@@ -157,11 +152,6 @@ public class PSMoveManager : MonoBehaviour
             if (psmoveapiHandle != IntPtr.Zero)
             {
                 FreeLibrary(psmoveapiHandle);
-            }
-
-            if (cleyeHandle != IntPtr.Zero)
-            {
-                FreeLibrary(cleyeHandle);
             }
 
             ManagerInstance = null;
@@ -244,7 +234,6 @@ class WorkerContext
 
 class PSMoveWorkerSettings
 {
-    public PSMoveTracker_Camera_API CameraAPI;
     public bool Multithreaded;
     public bool UseManualExposure;
     public float ManualExposureValue;
@@ -589,8 +578,6 @@ class PSMoveWorker
 
             settings.use_fitEllipse = 1;
             settings.camera_mirror = PSMove_Bool.PSMove_True;
-            settings.camera_api = WorkerSettings.CameraAPI;
-            settings.path_to_cleye_server_exe = WorkerSettings.ApplicationDataPath + "/Plugins/x86_64";
             settings.color_list_start_ind = (int)WorkerSettings.InitialTrackingColor;
             context.PSMoveTracker = PSMoveAPI.psmove_tracker_new_with_settings(ref settings);
         }
