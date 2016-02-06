@@ -57,6 +57,7 @@ public class PSMoveManager : MonoBehaviour
     public bool UseManualExposure= false;
     public PSMoveTracker_Smoothing_Type Filter3DType = PSMoveTracker_Smoothing_Type.Smoothing_LowPass;
     public PSMoveTrackingColor InitialTrackingColor = PSMoveTrackingColor.magenta;
+    public Vector3 PSMoveOffset = new Vector3();
     [Range(0.0f, 1.0f)]
     public float ManualExposureValue = 0.04f;
     public bool DisableTracking = false;
@@ -125,6 +126,7 @@ public class PSMoveManager : MonoBehaviour
                     UseManualExposure = this.UseManualExposure,
                     ManualExposureValue = this.ManualExposureValue,
                     InitialTrackingColor = this.InitialTrackingColor,
+                    PSMoveOffset = this.PSMoveOffset,
                     Filter3DType= this.Filter3DType,
                     DisableTracking = this.DisableTracking,
                     ApplicationDataPath = Application.dataPath
@@ -239,6 +241,7 @@ class PSMoveWorkerSettings
     public float ManualExposureValue;
     public PSMoveTrackingColor InitialTrackingColor;
     public PSMoveTracker_Smoothing_Type Filter3DType;
+    public Vector3 PSMoveOffset;
     public bool DisableTracking;
     public string ApplicationDataPath;
 }
@@ -478,6 +481,7 @@ class PSMoveWorker
                     if (!Context.WorkerSettings.DisableTracking)
                     {
                         ControllerUpdatePositions(
+                            WorkerSettings,
                             Context.PSMoveTracker,
                             Context.PSMoveFusion,
                             Context.PSMoves[psmove_id],
@@ -751,6 +755,7 @@ class PSMoveWorker
     }
 
     private static void ControllerUpdatePositions(
+        PSMoveWorkerSettings WorkerSettings,
         IntPtr psmove_tracker, // PSMoveTracker*
         IntPtr psmove_fusion, // PSMoveFusion*
         IntPtr psmove, // PSMove*
@@ -775,7 +780,11 @@ class PSMoveWorker
             // [Store the controller position]
             // Remember the position the ps move controller in either its native space
             // or in a transformed space if a transform file existed.
-            controllerData.PSMovePosition = new Vector3(xcm, ycm, zcm);
+            controllerData.PSMovePosition = 
+                new Vector3(
+                    xcm + WorkerSettings.PSMoveOffset.x,
+                    ycm + WorkerSettings.PSMoveOffset.y,
+                    zcm + WorkerSettings.PSMoveOffset.z);
         }
     }
 
