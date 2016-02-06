@@ -15,15 +15,12 @@ Check out this [video](https://www.youtube.com/watch?v=HRLblxNbAEI&feature=youtu
 
 This is adapted from the [psmove-ue4](https://github.com/cboulay/psmove-ue4) plugin and inspired by [UniMove](https://github.com/CopenhagenGameCollective/UniMove).
 
-#Win7 NOTE
-Win7 users. Please use the version of this library from the [win7 branch](https://github.com/brendanwalker/psmove-unity5/tree/win7). There is currently an issue with HIDAPI in Win7 that causes the controller pairing utility not to work. I have a hacky fix for this in the win7 branch, but haven't had a chance yet to clean it up and merge it back into master in a way that won't break win8+ yet.
-
 # Overview
-This library is inteded as a way for Unity5 Pro developers to iterate at their desk on tracked VR controller games/applications when you have limited or no access other advanced tracking solutions in the office. The PS3 Move controller on the PC has tracking that isn't as good as Valve's or Oculus' solution, but with some filtering, it's good enough for developer iteration, and it's super [cheap](http://www.amazon.com/Playstation-Move-Motion-Controller-3/dp/B002I0J51U). 
+This library is inteded as a way for Unity5 developers to iterate at their desk on tracked VR controller games/applications when you have limited or no access other advanced tracking solutions in the office. The PS3 Move controller on the PC has tracking that isn't as good as Valve's or Oculus' solution, but with some filtering, it's good enough for developer iteration, and it's super [cheap](http://www.amazon.com/Playstation-Move-Motion-Controller-3/dp/B002I0J51U). 
 
-This library is built on top of the [psmoveapi](https://github.com/thp/psmoveapi), a C library for reading raw data from a PS move controller. As awesome as the base psmove library is, it was missing a few pieces of functionality that made it work well for VR applications. Cboulay and I have been adding new VR specific functionality in his [fork](https://github.com/cboulay/psmoveapi) of psmoveapi. My [fork](https://github.com/brendanwalker/psmoveapi) has the most recent changes, but I try and push most my work to his fork, with the exception of the experimental 32-bit CLEye Server work I did to allow the CLEye driver to work in 64-bit applications (like Unity). Point being, if you want to make tweaks to the psmoveapi.dll or psmovetracker.dll used by this plugin, you'll need to clone my [fork](https://github.com/brendanwalker/psmoveapi), not cboulay's and build it locally.
+This library is built on top of the [psmoveapi](https://github.com/thp/psmoveapi), a C library for reading raw data from a PS move controller. As awesome as the base psmove library is, it was missing a few pieces of functionality that made it work well for VR applications. Cboulay and I have been adding new VR specific functionality in his [fork](https://github.com/cboulay/psmoveapi) of psmoveapi. My [fork](https://github.com/brendanwalker/psmoveapi/tree/psmove_unity5) has the most recent changes, but I try and push most my work to his fork, with the exception of the minor tweaks I do to better support this Unity plugin. Point being, if you want to make tweaks to the psmoveapi.dll or psmovetracker.dll used by this plugin, you'll need to clone my [fork](https://github.com/brendanwalker/psmoveapi/tree/psmove_unity5), not cboulay's and build it locally.
 
-This plugin works in Windows 64-bit (7/8.1/10). It should work in OS X but I still need to build the psmove libs on that platform.
+This plugin works in Windows 64-bit (7/8.1/10), though LibUSB drivers for the camera in Win7 are flakey at times.
 
 # Working features
 - Position and orientation of multiple controllers.
@@ -36,9 +33,7 @@ This plugin works in Windows 64-bit (7/8.1/10). It should work in OS X but I sti
 - Yaw-drift free orientation filter using Iterative Jacobian Gradient Descent algorithm
 
 # Planned features
-- Improving ps3eye camera driver performance (pretty terrible frame capture perf at the moment due to libusb in Windows)
 - Integration with psmove windows service/unix daemon
-- Elminate the requirement to need Unity Pro (get the controller data via socket connection to the service)
 
 # Install & Use
 
