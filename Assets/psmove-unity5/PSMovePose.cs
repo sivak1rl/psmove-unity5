@@ -66,7 +66,7 @@ public class PSMovePose
             ref TrackingSpaceToWorldSpacePosition,
             ref OrientationTransform);
 
-        if (DataContext.GetIsTracking())
+        if (DataContext.GetIsSeenByTracker())
         {
             // The PSMove position is given in the space of the rift camera in centimeters
             Vector3 PSMPosTrackingSpace = DataContext.GetTrackingSpacePosition();

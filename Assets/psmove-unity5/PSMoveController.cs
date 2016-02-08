@@ -70,12 +70,12 @@ public class PSMoveController : MonoBehaviour
 
     public bool IsEnabled
     {
-        get { return dataContext.GetIsEnabled(); }
+        get { return dataContext.GetIsTrackingEnabled(); }
     }
 
     public bool IsTracking
     {
-        get { return dataContext.GetIsTracking(); }
+        get { return dataContext.GetIsSeenByTracker(); }
     }
 
     public float TriggerValue
@@ -227,7 +227,7 @@ public class PSMoveController : MonoBehaviour
             OnButtonMoveReleased(this, EventArgs.Empty);
 
         // Update the transform of this game object based on the new pose
-        if (dataContext.GetIsTracking())
+        if (dataContext.GetIsSeenByTracker())
         {
             this.gameObject.transform.position = dataContext.Pose.WorldPosition;
         }

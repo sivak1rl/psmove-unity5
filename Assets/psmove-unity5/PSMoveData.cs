@@ -45,8 +45,8 @@ public class PSMoveRawControllerData_Base
     public UInt32 Buttons;
     public byte TriggerValue;
     public bool IsConnected; // Whether or not the controller is connected
-    public bool IsTracking; // Whether or not the tracker saw the controller on the latest frame.
-    public bool IsEnabled; // Whether or not the tracker is tracking this specific controller
+    public bool IsSeenByTracker; // Whether or not the tracker saw the controller on the latest frame.
+    public bool IsTrackingEnabled; // Whether or not the tracker is tracking this specific controller
     public int SequenceNumber; // Increments with every update
 
     // -------
@@ -69,8 +69,8 @@ public class PSMoveRawControllerData_Base
         RumbleRequest = 0;
         CycleColourRequest = false;
         IsConnected = false;
-        IsTracking = false;
-        IsEnabled = false;
+        IsSeenByTracker = false;
+        IsTrackingEnabled = false;
         SequenceNumber = 0;
     }
 };
@@ -130,8 +130,8 @@ public class PSMoveRawControllerData_TLS : PSMoveRawControllerData_Base
                 this.Buttons = ConcurrentData.Buttons;
                 this.TriggerValue = ConcurrentData.TriggerValue;
                 this.IsConnected = ConcurrentData.IsConnected;
-                this.IsTracking = ConcurrentData.IsTracking;
-                this.IsEnabled = ConcurrentData.IsEnabled;
+                this.IsSeenByTracker = ConcurrentData.IsSeenByTracker;
+                this.IsTrackingEnabled = ConcurrentData.IsTrackingEnabled;
                 this.SequenceNumber = ConcurrentData.SequenceNumber;
             }
         }
@@ -168,8 +168,8 @@ public class PSMoveRawControllerData_TLS : PSMoveRawControllerData_Base
                 ConcurrentData.Buttons = this.Buttons;
                 ConcurrentData.TriggerValue = this.TriggerValue;
                 ConcurrentData.IsConnected = this.IsConnected;
-                ConcurrentData.IsTracking = this.IsTracking;
-                ConcurrentData.IsEnabled = this.IsEnabled;
+                ConcurrentData.IsSeenByTracker = this.IsSeenByTracker;
+                ConcurrentData.IsTrackingEnabled = this.IsTrackingEnabled;
                 ConcurrentData.SequenceNumber = this.SequenceNumber;
             }
         }
@@ -303,11 +303,11 @@ public class PSMoveDataContext
         }
     }
 
-    public bool GetIsTracking()
+    public bool GetIsSeenByTracker()
     {
         if (RawControllerData.IsValid() && RawControllerData.IsConnected)
         {
-            return RawControllerData.IsTracking;
+            return RawControllerData.IsSeenByTracker;
         }
         else 
         {
@@ -315,11 +315,11 @@ public class PSMoveDataContext
         }
     }
     
-    public bool GetIsEnabled()
+    public bool GetIsTrackingEnabled()
     {
         if (RawControllerData.IsValid() && RawControllerData.IsConnected)
         {
-            return RawControllerData.IsEnabled;
+            return RawControllerData.IsTrackingEnabled;
         }
         else 
         {
