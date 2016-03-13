@@ -30,8 +30,6 @@
 * POSSIBILITY OF SUCH DAMAGE.
 **/
 
-#define LOAD_DLL_MANUALLY
-
 using UnityEngine;
 using System.Collections;
 using System.Threading;
@@ -216,9 +214,6 @@ class PSMoveWorker
             WorkerControllerDataArray_Concurrent[i] = new PSMoveRawControllerData_Concurrent();
             WorkerControllerDataArray[i] = new PSMoveRawControllerData_TLS(WorkerControllerDataArray_Concurrent[i]);
         }
-
-        psmoveapiHandle = IntPtr.Zero;
-        psmoveapiTrackerHandle = IntPtr.Zero;
     }
 
     public void OnGameStarted(PSMoveWorkerSettings workerSettings)
@@ -263,32 +258,6 @@ class PSMoveWorker
     
     private void WorkerSetup(PSMoveWorkerSettings workerSettings)
     {
-        #if LOAD_DLL_MANUALLY
-        if (psmoveapiHandle == IntPtr.Zero)
-        {
-            if (IntPtr.Size == 8)
-            {
-                psmoveapiHandle = LoadLib("Assets/Plugins/x86_64/psmoveapi.dll");
-            }
-            else
-            {
-                psmoveapiHandle = LoadLib("Assets/Plugins/x86/psmoveapi.dll");
-            }
-        }
-
-        if (psmoveapiTrackerHandle == IntPtr.Zero)
-        {
-            if (IntPtr.Size == 8)
-            {
-                psmoveapiTrackerHandle = LoadLib("Assets/Plugins/x86_64/psmoveapi_tracker.dll");
-            }
-            else
-            {
-                psmoveapiTrackerHandle = LoadLib("Assets/Plugins/x86/psmoveapi_tracker.dll");
-            }
-        }
-        #endif // LOAD_DLL_MANUALLY
-
         if (!WorkerThread.IsAlive)
         {
             WorkerSettings= workerSettings;
@@ -309,19 +278,6 @@ class PSMoveWorker
             // Reset the stop and exited flags so that the thread can be restarted
             HaltThreadSignal.Reset();
             ThreadExitedSignal.Reset();
-        }
-
-        //Free any manually loaded DLLs
-        if (psmoveapiTrackerHandle != IntPtr.Zero)
-        {
-            FreeLibrary(psmoveapiTrackerHandle);
-            psmoveapiTrackerHandle = IntPtr.Zero;
-        }
-
-        if (psmoveapiHandle != IntPtr.Zero)
-        {
-            FreeLibrary(psmoveapiHandle);
-            psmoveapiHandle = IntPtr.Zero;
         }
     }
 
@@ -783,34 +739,4 @@ class PSMoveWorker
     private Thread WorkerThread;
     private ManualResetEvent HaltThreadSignal;
     private ManualResetEvent ThreadExitedSignal;
-
-    // DLL Handles
-    private IntPtr psmoveapiHandle;
-    private IntPtr psmoveapiTrackerHandle;
-
-#if LOAD_DLL_MANUALLY
-    private IntPtr LoadLib(string path)
-    {
-        IntPtr ptr = LoadLibrary(path);
-        if (ptr == IntPtr.Zero)
-        {
-            int errorCode = Marshal.GetLastWin32Error();
-            UnityEngine.Debug.LogError(string.Format("Failed to load library {1} (ErrorCode: {0})", errorCode, path));
-        }
-        else
-        {
-            UnityEngine.Debug.Log("loaded lib " + path);
-        }
-        return ptr;
-    }
-#endif
-
-    // Win32 API
-#if LOAD_DLL_MANUALLY
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    private static extern IntPtr LoadLibrary(string libname);
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Auto)]
-    private static extern bool FreeLibrary(IntPtr hModule);
-#endif
 }

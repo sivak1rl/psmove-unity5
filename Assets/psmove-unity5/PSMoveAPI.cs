@@ -158,83 +158,83 @@ public class PSMoveAPI
         PSMOVE_CURRENT_VERSION = 0x030001, /*!< Current version, see psmove_init() */
     }
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern PSMove_Bool psmove_init(PSMove_Version version);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern void psmove_shutdown();
 
     // Move Controller API
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern IntPtr psmove_connect();
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern IntPtr psmove_connect_by_id(int id);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern int psmove_count_connected();
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern PSMoveConnectionType psmove_connection_type(IntPtr move);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern int psmove_has_calibration(IntPtr move);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern void psmove_enable_orientation(IntPtr move, PSMove_Bool enable);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern PSMove_Bool psmove_has_orientation(IntPtr move);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern void psmove_get_orientation(IntPtr move, ref float oriw, ref float orix, ref float oriy, ref float oriz);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern void psmove_set_leds(IntPtr move, char r, char g, char b);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern int psmove_update_leds(IntPtr move);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern void psmove_set_rumble(IntPtr move, System.Byte rumble);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern uint psmove_poll(IntPtr move);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern uint psmove_get_buttons(IntPtr move);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern uint psmove_get_button_events(IntPtr move, ref uint pressed, ref uint released);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern char psmove_get_trigger(IntPtr move);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern float psmove_get_temperature(IntPtr move);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern PSMove_Battery_Level psmove_get_battery(IntPtr move);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern void psmove_get_accelerometer(IntPtr move, ref int ax, ref int ay, ref int az);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern void psmove_get_accelerometer_frame(IntPtr move, PSMove_Frame frame, ref float ax, ref float ay, ref float az);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern void psmove_get_gyroscope(IntPtr move, ref int gx, ref int gy, ref int gz);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern void psmove_get_gyroscope_frame(IntPtr move, PSMove_Frame frame, ref float gx, ref float gy, ref float gz);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern void psmove_get_magnetometer(IntPtr move, ref int mx, ref int my, ref int mz);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern void psmove_disconnect(IntPtr move);
 
-    [DllImport("psmoveapi.dll")]
+    [DllImport("psmoveapi")]
     public static extern void psmove_reset_orientation(IntPtr move);
 
     // Tracker API
@@ -316,61 +316,61 @@ public class PSMoveAPI
     }
 
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern IntPtr psmove_tracker_new();
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern void psmove_tracker_free(IntPtr psmove_tracker);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern void psmove_tracker_settings_set_default(ref PSMoveTrackerSettings settings);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern IntPtr psmove_tracker_new_with_settings(ref PSMoveTrackerSettings settings);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern PSMoveTracker_ErrorCode psmove_tracker_get_last_error();
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern void psmove_tracker_get_smoothing_settings(IntPtr tracker, ref PSMoveTrackerSmoothingSettings smoothing_settings);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern void psmove_tracker_set_smoothing_settings(IntPtr tracker, ref PSMoveTrackerSmoothingSettings smoothing_settings);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern void psmove_tracker_set_exposure(IntPtr tracker, PSMoveTracker_Exposure exposure);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern void psmove_tracker_get_size(IntPtr tracker, ref int tracker_width, ref int tracker_height);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern PSMoveTracker_Status psmove_tracker_enable(IntPtr tracker, IntPtr psmove);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern PSMoveTracker_Status psmove_tracker_get_status(IntPtr tracker, IntPtr psmove);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern void psmove_tracker_update_image(IntPtr tracker);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern int psmove_tracker_update(IntPtr tracker, IntPtr psmove);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern void psmove_tracker_reset_location(IntPtr tracker, IntPtr psmove);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern int psmove_tracker_cycle_color(IntPtr tracker, IntPtr psmove);
 
     // Tracker Fusion API
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern IntPtr psmove_fusion_new(IntPtr psmove_tracker, float z_near, float z_far);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern void psmove_fusion_free(IntPtr psmove_fusion);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern void psmove_fusion_get_position(IntPtr psmove_fusion, IntPtr psmove, ref float xcm, ref float ycm, ref float zcm);
 
-    [DllImport("psmoveapi_tracker.dll")]
+    [DllImport("psmoveapi_tracker")]
     public static extern void psmove_fusion_get_transformed_location(IntPtr psmove_fusion, IntPtr psmove, ref float xcm, ref float ycm, ref float zcm);
 }
