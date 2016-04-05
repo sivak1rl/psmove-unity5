@@ -131,6 +131,7 @@ public class PSMoveTest : MonoBehaviour
     void move_OnButtonPSPressed(object sender, EventArgs e)
     {
         Debug.Log("PS button pressed");
+        PSMoveManager.GetManagerInstance().AlignToCenterEye(transform, Camera.main.transform);
     }
 
     void move_OnButtonMovePressed(object sender, EventArgs e)
@@ -191,7 +192,7 @@ public class PSMoveTest : MonoBehaviour
 
             if (moveComponent.IsConnected)
             {
-                display = string.Format("PS Move {0} - Connected: Triangle[{0}] Circle[{1}] Cross[{2}] Square[{3}] Select[{4}] Start [{5}] PS[{6}] Move[{7}] Trigger[{8}]\n",
+                display = string.Format("PS Move {0} - Connected: Triangle[{1}] Circle[{2}] Cross[{3}] Square[{4}] Select[{5}] Start [{6}] PS[{7}] Move[{8}] Trigger[{9}]\n",
                     moveComponent.PSMoveID,
                     moveComponent.IsTriangleButtonDown ? 1 : 0,
                     moveComponent.IsCircleButtonDown ? 1 : 0,
