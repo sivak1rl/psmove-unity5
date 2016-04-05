@@ -59,6 +59,7 @@ public class PSMoveManager : MonoBehaviour
     public PSMoveTracker_Smoothing_Type Filter3DType = PSMoveTracker_Smoothing_Type.Smoothing_LowPass;
     public PSMoveTrackingColor InitialTrackingColor = PSMoveTrackingColor.magenta;
     public Vector3 PSMoveOffset = new Vector3();
+    private Vector3 oldPSMoveOffset = new Vector3();
     [Range(0.0f, 1.0f)]
     public float ManualExposureValue = 0.04f;
     public bool TrackerEnabled = true;
@@ -81,6 +82,36 @@ public class PSMoveManager : MonoBehaviour
         PSMoveWorker.GetWorkerInstance().ReleasePSMove(DataContext);
     }
 
+
+    /// <summary>
+    /// If manual offset is set, removes it. Otherwise, sets the manual
+    /// PSMoveOffset of the manager by assuming this controller is held in front of the HMD.
+    /// </summary>
+    /// <param name="controller">Controller transform used for centering.</param>
+    /// <param name="riftCam">Transform of HMD/Main Camera</param>
+    public void AlignToCenterEye(Transform controller, Transform riftCam)
+    {
+      var psmovePos = controller.transform.position;
+      if (this.PSMoveOffset == Vector3.zero)
+      {
+        //Difference between Hypothetical center of hmd and physical location of psmove ball 
+        var hmdThickness = riftCam.forward * .07f; //7cm for dk2
+
+        //Assume controller is held in front of the hmd.
+        var targetPos = riftCam.position + hmdThickness;
+        var res = (targetPos - psmovePos) * PSMoveUtility.MetersToCM;
+        res.z = -res.z;
+        this.PSMoveOffset = res;
+        UnityEngine.Debug.Log("Aligning PSMove offset to center Eye");
+      }
+      else
+      {
+        this.PSMoveOffset = Vector3.zero;
+        UnityEngine.Debug.Log("Resetting PSMove offset to zero");
+      }
+    }
+
+
     // Unity Callbacks
     public void Awake()
     {
@@ -102,6 +133,15 @@ public class PSMoveManager : MonoBehaviour
         }
     }
 
+    public void Update()
+    {
+        if (PSMoveOffset != oldPSMoveOffset)
+        {
+          PSMoveWorker.GetWorkerInstance().WorkerSettings.PSMoveOffset = this.PSMoveOffset;
+        }
+        oldPSMoveOffset = PSMoveOffset;
+    }
+    
     public void OnApplicationQuit()
     {
         if (ManagerInstance != null)
