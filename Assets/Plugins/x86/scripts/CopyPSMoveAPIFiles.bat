@@ -40,6 +40,9 @@ if not errorlevel 0 goto COPY_FAILED
 xcopy %PSMOVE_ROOT_PATH%\build\Release\visual_coregister_dk2.exe ..\ /Y
 if not errorlevel 0 goto COPY_FAILED
 
+xcopy %PSMOVE_ROOT_PATH%\build\Release\visual_tracker_setup.exe ..\ /Y
+if not errorlevel 0 goto COPY_FAILED
+
 echo [SUCCESS] PSMoveAPI Release build copy complete
 pause
 goto EXIT

@@ -220,20 +220,15 @@ public class PSMoveDataContext
         {
             // Backup controller state from the previous frame that we want to compute deltas on
             // before it gets stomped by InputManagerPostAndRead()
-            int CurrentSequenceNumber = RawControllerData.SequenceNumber;
             byte CurrentTriggerValue = RawControllerData.TriggerValue;
             UInt32 CurrentButtons = RawControllerData.Buttons;
 
             // If the worker thread updated the controller, the sequence number will change
             RawControllerData.ComponentRead();
 
-            // If the worker thread posted new data then the sequence number should changes
-            if (RawControllerData.SequenceNumber != CurrentSequenceNumber)
-            {
-                // Actually update the previous controller state when we get new data
-                RawControllerPreviousTriggerValue = CurrentTriggerValue;
-                RawControllerPreviousButtons = CurrentButtons;
-            }
+            // Actually update the previous controller state when we get new data
+            RawControllerPreviousTriggerValue = CurrentTriggerValue;
+            RawControllerPreviousButtons = CurrentButtons;
 
             // Refresh the world space controller pose
             Pose.PoseUpdate(this, ParentGameObjectTransform);
