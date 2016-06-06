@@ -9,7 +9,7 @@
                                                                      |___/       
 </pre>
 
-Plugin for using PSMove as input in Unity 5.
+Plugin for using PSMove as input in Unity 5.3.4p1 (Oculus SDK 1.3).
 
 Check out this [video](https://www.youtube.com/watch?v=HRLblxNbAEI&feature=youtu.be) to see some tracking in action.
 
@@ -28,12 +28,14 @@ This plugin works in Windows 64-bit (7/8.1/10), though LibUSB drivers for the ca
 - Trigger-button value (0-255)
 - Set vibration (0-255)
 - Controller color changes
-- Coregistration with the Oculus DK2
+- Coregistration with the Oculus DK2 camera pose estimation tool
+- Calibration mat based tracking camera pose estimation tool (https://www.youtube.com/watch?v=33cWRaCC9hU)
+- MultiCamera support
 - Position tracking filter (using Kalman filter or LowPass filter)
 - Yaw-drift free orientation filter using Iterative Jacobian Gradient Descent algorithm
 
 # Planned features
-- Integration with psmove windows service/unix daemon
+- Integration with psmove windows service/unix daemon (http://github.com/cboulay/PSMoveService)
 
 # Install & Use
 
