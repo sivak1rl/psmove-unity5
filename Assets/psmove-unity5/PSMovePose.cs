@@ -2,8 +2,7 @@
 * PSMove API - A Unity5 plugin for the PSMove motion controller.
 *              Derived from the psmove-ue4 plugin by Chadwick Boulay
 *              and the UniMove plugin by the Copenhagen Game Collective
-* Copyright (C) 2015, PolyarcGames (http://www.polyarcgames.com)
-*                   Brendan Walker (brendan@polyarcgames.com)
+* Copyright (C) 2016, Guido Sanchez (hipstersloth908@gmail.com)
 * 
 * All rights reserved.
 *
