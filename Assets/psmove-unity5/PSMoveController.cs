@@ -123,6 +123,21 @@ public class PSMoveController : MonoBehaviour
         get { return dataContext.GetButtonMove(); }
     }
 
+    public Vector3 Accelerometer
+    {
+        get { return dataContext.GetAccelerometer(); }
+    }
+
+    public Vector3 Gyroscope
+    {
+        get { return dataContext.GetGyroscope(); }
+    }
+    
+    public Vector3 Magnetometer
+    {
+        get { return dataContext.GetMagnetometer(); }
+    }
+    
     // Debug
     public bool ShowTrackingDebug;
     public bool ShowHMDFrustumDebug;

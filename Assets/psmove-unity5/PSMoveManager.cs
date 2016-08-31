@@ -507,6 +507,9 @@ class PSMoveWorker
                     // Update the controller status (via bluetooth)
                     PSMoveAPI.psmove_poll(Context.PSMoves[psmove_id]);  // Necessary to poll yet again?
 
+                    // Store the controller sensor data
+                    ControllerUpdateSensors(Context.PSMoves[psmove_id], localControllerData);
+                    
                     // Store the controller orientation
                     ControllerUpdateOrientations(Context.PSMoves[psmove_id], localControllerData);
 
@@ -922,6 +925,23 @@ class PSMoveWorker
         }
     }
 
+    private static void ControllerUpdateSensors(
+        IntPtr psmove, // PSMove*
+        PSMoveRawControllerData_Base controllerData)
+    {
+        float acc_x, acc_y, acc_z;
+        float gyro_x, gyro_y, gyro_z;
+        int mag_x, mag_y, mag_z;
+        
+        PSMoveAPI.psmove_get_accelerometer_frame(psmove, PSMove_Frame.Frame_SecondHalf, ref acc_x, ref acc_y, ref acc_z);
+        PSMoveAPI.psmove_get_gyroscope_frame(psmove, PSMove_Frame.Frame_SecondHalf, ref gyro_x, ref gyro_y, ref gyro_z);
+        PSMoveAPI.psmove_get_magnetometer(psmove, ref mag_x, ref mag_y, ref mag_z);
+        
+        controllerData.Accelerometer = new Vector3(acc_x, acc_y, acc_z);
+        controllerData.Gyroscope = new Vector3(gyro_x, gyro_y, gyro_z);
+        controllerData.Magnetometer = new Vector3((float)mag_x, (float)mag_y, (float)mag_z);
+    }
+    
     private static void ControllerUpdateOrientations(
         IntPtr psmove, // PSMove*
         PSMoveRawControllerData_Base controllerData)
