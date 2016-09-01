@@ -40,7 +40,10 @@ public class PSMoveRawControllerData_Base
     // Data items that typically get filled by the Worker thread
     // then are made available to the consuming game object (i.e. component)
     public Vector3 PSMovePosition;
-    public Quaternion PSMoveOrientation;
+    public Quaternion PSMoveOrientation;   
+    public Vector3 Accelerometer;
+    public Vector3 Gyroscope;
+    public Vector3 Magnetometer;
     public UInt32 Buttons;
     public byte TriggerValue;
     public bool IsConnected; // Whether or not the controller is connected
@@ -63,6 +66,9 @@ public class PSMoveRawControllerData_Base
     {
         PSMovePosition = Vector3.zero;
         PSMoveOrientation = Quaternion.identity;
+        Accelerometer = Vector3.zero;
+        Gyroscope = Vector3.zero;
+        Magnetometer = Vector3.zero;
         Buttons = 0;
         TriggerValue = 0;
         RumbleRequest = 0;
@@ -126,6 +132,9 @@ public class PSMoveRawControllerData_TLS : PSMoveRawControllerData_Base
                 // Read the worker thread's data into the component thread's data
                 this.PSMovePosition = ConcurrentData.PSMovePosition;
                 this.PSMoveOrientation = ConcurrentData.PSMoveOrientation;
+                this.Accelerometer = ConcurrentData.Accelerometer;
+                this.Gyroscope = ConcurrentData.Gyroscope;
+                this.Magnetometer = ConcurrentData.Magnetometer;
                 this.Buttons = ConcurrentData.Buttons;
                 this.TriggerValue = ConcurrentData.TriggerValue;
                 this.IsConnected = ConcurrentData.IsConnected;
@@ -164,6 +173,9 @@ public class PSMoveRawControllerData_TLS : PSMoveRawControllerData_Base
                 // Post the worker thread's data to the component thread's data
                 ConcurrentData.PSMovePosition = this.PSMovePosition;
                 ConcurrentData.PSMoveOrientation = this.PSMoveOrientation;
+                ConcurrentData.Accelerometer = this.Accelerometer;
+                ConcurrentData.Gyroscope = this.Gyroscope;
+                ConcurrentData.Magnetometer = this.Magnetometer;
                 ConcurrentData.Buttons = this.Buttons;
                 ConcurrentData.TriggerValue = this.TriggerValue;
                 ConcurrentData.IsConnected = this.IsConnected;
@@ -282,6 +294,42 @@ public class PSMoveDataContext
         else
         {
             return Quaternion.identity;
+        }
+    }
+    
+    public Vector3 GetAccelerometer()
+    {
+        if (RawControllerData.IsValid() && RawControllerData.IsConnected)
+        {
+            return RawControllerData.Accelerometer;
+        }
+        else
+        {
+            return Vector3.zero;
+        }
+    }
+    
+    public Vector3 GetGyroscope()
+    {
+        if (RawControllerData.IsValid() && RawControllerData.IsConnected)
+        {
+            return RawControllerData.Gyroscope;
+        }
+        else
+        {
+            return Vector3.zero;
+        }
+    }
+
+    public Vector3 GetMagnetometer()
+    {
+        if (RawControllerData.IsValid() && RawControllerData.IsConnected)
+        {
+            return RawControllerData.Magnetometer;
+        }
+        else
+        {
+            return Vector3.zero;
         }
     }
 

@@ -233,6 +233,9 @@ public class PSMoveAPI
     public static extern void psmove_get_magnetometer(IntPtr move, ref int mx, ref int my, ref int mz);
 
     [DllImport("psmoveapi.dll")]
+    public static extern void psmove_get_magnetometer_vector(IntPtr move, ref float mx, ref float my, ref float mz);
+
+    [DllImport("psmoveapi.dll")]
     public static extern void psmove_disconnect(IntPtr move);
 
     [DllImport("psmoveapi.dll")]

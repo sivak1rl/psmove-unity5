@@ -187,11 +187,12 @@ public class PSMoveTest : MonoBehaviour
     {
         if (moveComponent != null)
         {
-            string display = "";
+            string btnDisplay = "";
+            string sensorDisplay = "";
 
             if (moveComponent.IsConnected)
             {
-                display = string.Format("PS Move {0} - Connected: Triangle[{1}] Circle[{2}] Cross[{3}] Square[{4}] Select[{5}] Start [{6}] PS[{7}] Move[{8}] Trigger[{9}]\n",
+                btnDisplay = string.Format("PS Move {0} - Connected: Tri[{1}] Cir[{2}] X[{3}] Sq[{4}] Sel[{5}] St[{6}] PS[{7}] Mv[{8}] Tg[{9}]\n",
                     moveComponent.PSMoveID,
                     moveComponent.IsTriangleButtonDown ? 1 : 0,
                     moveComponent.IsCircleButtonDown ? 1 : 0,
@@ -202,13 +203,25 @@ public class PSMoveTest : MonoBehaviour
                     moveComponent.IsPSButtonDown ? 1 : 0,
                     moveComponent.IsMoveButtonDown ? 1 : 0,
                     moveComponent.TriggerValue);
+
+                sensorDisplay = string.Format("Acc[{0:F2}, {1:F2}, {2:F2}] Gyro[{3:F2}, {4:F2}, {5:F2}] Mag[{6:F2}, {7:F2}, {8:F2}]\n",
+                    moveComponent.Accelerometer.x,
+                    moveComponent.Accelerometer.y,
+                    moveComponent.Accelerometer.z,
+                    moveComponent.Gyroscope.x,
+                    moveComponent.Gyroscope.y,
+                    moveComponent.Gyroscope.z,
+                    moveComponent.Magnetometer.x,
+                    moveComponent.Magnetometer.y,
+                    moveComponent.Magnetometer.z);
             }
             else
             {
-                display = string.Format("PS Move {0} - NOT CONNECTED", moveComponent.PSMoveID);
+                btnDisplay = string.Format("PS Move {0} - NOT CONNECTED", moveComponent.PSMoveID);
             }
 
-            GUI.Label(new Rect(10, 10 + moveComponent.PSMoveID * 20, 500, 100), display);
+            GUI.Label(new Rect(10, 10 + moveComponent.PSMoveID * 50, 500, 100), btnDisplay);
+            GUI.Label(new Rect(10, 35 + moveComponent.PSMoveID * 50, 500, 100), sensorDisplay);
         }
     }
 }
