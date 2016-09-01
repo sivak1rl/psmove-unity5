@@ -122,16 +122,19 @@ public class PSMoveController : MonoBehaviour
         get { return dataContext.GetButtonMove(); }
     }
 
+    // In G-units where 1G = 9.8m/s^2
     public Vector3 Accelerometer
     {
         get { return dataContext.GetAccelerometer(); }
     }
 
+    // In Radians/Second
     public Vector3 Gyroscope
     {
         get { return dataContext.GetGyroscope(); }
     }
     
+    // Unit Vector pointing in the direction of magnetic north
     public Vector3 Magnetometer
     {
         get { return dataContext.GetMagnetometer(); }
