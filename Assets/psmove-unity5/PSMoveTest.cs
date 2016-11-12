@@ -39,8 +39,10 @@ public class PSMoveTest : MonoBehaviour
 
     private PSMoveController moveComponent;
     private MeshRenderer rendererComponent;
+    public bool movePressed;
+    public GameObject littleCube;
 
-	void Start() 
+    void Start() 
 	{
         moveComponent = gameObject.GetComponent<PSMoveController>();
         rendererComponent = gameObject.GetComponent<MeshRenderer>();
@@ -74,6 +76,10 @@ public class PSMoveTest : MonoBehaviour
 
     void Update() 
     {
+        if(movePressed)
+        {
+            GameObject.Instantiate(littleCube, GameObject.FindGameObjectWithTag("launch").transform.position, Quaternion.identity, null);
+        }
         if (moveComponent != null)
         {
             if (HideWhenUntracked && rendererComponent != null)
@@ -136,6 +142,7 @@ public class PSMoveTest : MonoBehaviour
     void move_OnButtonMovePressed(object sender, EventArgs e)
     {
         Debug.Log("Move button pressed");
+        movePressed = true;
         moveComponent.ResetYaw();
     }
     #endregion
@@ -179,6 +186,7 @@ public class PSMoveTest : MonoBehaviour
     void move_OnButtonMoveReleased(object sender, EventArgs e)
     {
         Debug.Log("Move button released");
+        movePressed = !true;
     }
     #endregion
 

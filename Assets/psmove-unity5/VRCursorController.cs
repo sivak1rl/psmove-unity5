@@ -5,10 +5,11 @@ using System;
 public class VRCursorController : MonoBehaviour 
 {
     private static VRCursorController m_instance;
+    public GameObject littleSquare;
 
     private PSMoveController m_moveComponent;
     private bool m_bWasPressed;
-    private bool m_bIsPressed;
+    public bool m_bIsPressed;
 
     public static VRCursorController GetInstance()
     {
@@ -85,6 +86,7 @@ public class VRCursorController : MonoBehaviour
         {
             m_bWasPressed = m_bIsPressed;
             m_bIsPressed = m_moveComponent.TriggerValue > 0.1f;
+            
         }
     }
 }
