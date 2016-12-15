@@ -32,8 +32,9 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using System.Collections;
 
-public class PSMoveTest : MonoBehaviour 
+public class PSMoveTest : MonoBehaviour
 {
     public bool HideWhenUntracked = false;
 
@@ -42,8 +43,8 @@ public class PSMoveTest : MonoBehaviour
     public bool movePressed;
     public GameObject littleCube;
 
-    void Start() 
-	{
+    void Start()
+    {
         moveComponent = gameObject.GetComponent<PSMoveController>();
         rendererComponent = gameObject.GetComponent<MeshRenderer>();
 
@@ -74,9 +75,9 @@ public class PSMoveTest : MonoBehaviour
         }
     }
 
-    void Update() 
+    void Update()
     {
-        if(movePressed)
+        if (movePressed)
         {
             GameObject.Instantiate(littleCube, GameObject.FindGameObjectWithTag("launch").transform.position, Quaternion.identity, null);
         }
@@ -105,6 +106,11 @@ public class PSMoveTest : MonoBehaviour
     void move_OnButtonTrianglePressed(object sender, EventArgs e)
     {
         Debug.Log("Triangle button pressed");
+        var objects = GameObject.FindGameObjectsWithTag("cube");
+        foreach (GameObject o in objects)
+        {
+            GameObject.DestroyImmediate(o);
+        }
     }
 
     void move_OnButtonCirclePressed(object sender, EventArgs e)
@@ -113,9 +119,34 @@ public class PSMoveTest : MonoBehaviour
         moveComponent.CycleTrackingColor();
     }
 
+    public static int time = 0;
+
     void move_OnButtonCrossPressed(object sender, EventArgs e)
     {
+        Debug.Log("I want to believe!!!");
+        UnityEngine.Random r = new UnityEngine.Random();
+        Application.CaptureScreenshot(@"C:\Users\Richard\Pictures\UnityChalkBoard\" + UnityEngine.Random.Range(0, 1000000) + ".png");
+        if (time == 0) StartCoroutine(WaitTwoSecondsThenDestroyCubes());
+        time = 0;
+
         Debug.Log("Cross button pressed");
+    }
+
+    IEnumerator WaitTwoSecondsThenDestroyCubes()
+    {
+        while (true)
+        {
+            if (time == 2)
+            {
+                var objects = GameObject.FindGameObjectsWithTag("cube");
+                foreach (GameObject o in objects)
+                {
+                    GameObject.DestroyImmediate(o);
+                }
+            }
+            yield return new WaitForSeconds(1f);
+            time++;
+        }
     }
 
     void move_OnButtonSquarePressed(object sender, EventArgs e)
@@ -191,45 +222,45 @@ public class PSMoveTest : MonoBehaviour
     #endregion
 
 
-    void OnGUI() 
-    {
-        if (moveComponent != null)
-        {
-            string btnDisplay = "";
-            string sensorDisplay = "";
+    //void OnGUI() 
+    //{
+    //    if (moveComponent != null)
+    //    {
+    //        string btnDisplay = "";
+    //        string sensorDisplay = "";
 
-            if (moveComponent.IsConnected)
-            {
-                btnDisplay = string.Format("PS Move {0} - Connected: Tri[{1}] Cir[{2}] X[{3}] Sq[{4}] Sel[{5}] St[{6}] PS[{7}] Mv[{8}] Tg[{9}]\n",
-                    moveComponent.PSMoveID,
-                    moveComponent.IsTriangleButtonDown ? 1 : 0,
-                    moveComponent.IsCircleButtonDown ? 1 : 0,
-                    moveComponent.IsCrossButtonDown ? 1 : 0,
-                    moveComponent.IsSquareButtonDown ? 1 : 0,
-                    moveComponent.IsSelectButtonDown ? 1 : 0,
-                    moveComponent.IsStartButtonDown ? 1 : 0,
-                    moveComponent.IsPSButtonDown ? 1 : 0,
-                    moveComponent.IsMoveButtonDown ? 1 : 0,
-                    moveComponent.TriggerValue);
+    //        if (moveComponent.IsConnected)
+    //        {
+    //            btnDisplay = string.Format("PS Move {0} - Connected: Tri[{1}] Cir[{2}] X[{3}] Sq[{4}] Sel[{5}] St[{6}] PS[{7}] Mv[{8}] Tg[{9}]\n",
+    //                moveComponent.PSMoveID,
+    //                moveComponent.IsTriangleButtonDown ? 1 : 0,
+    //                moveComponent.IsCircleButtonDown ? 1 : 0,
+    //                moveComponent.IsCrossButtonDown ? 1 : 0,
+    //                moveComponent.IsSquareButtonDown ? 1 : 0,
+    //                moveComponent.IsSelectButtonDown ? 1 : 0,
+    //                moveComponent.IsStartButtonDown ? 1 : 0,
+    //                moveComponent.IsPSButtonDown ? 1 : 0,
+    //                moveComponent.IsMoveButtonDown ? 1 : 0,
+    //                moveComponent.TriggerValue);
 
-                sensorDisplay = string.Format("Acc[{0:F2}, {1:F2}, {2:F2}] Gyro[{3:F2}, {4:F2}, {5:F2}] Mag[{6:F2}, {7:F2}, {8:F2}]\n",
-                    moveComponent.Accelerometer.x,
-                    moveComponent.Accelerometer.y,
-                    moveComponent.Accelerometer.z,
-                    moveComponent.Gyroscope.x,
-                    moveComponent.Gyroscope.y,
-                    moveComponent.Gyroscope.z,
-                    moveComponent.Magnetometer.x,
-                    moveComponent.Magnetometer.y,
-                    moveComponent.Magnetometer.z);
-            }
-            else
-            {
-                btnDisplay = string.Format("PS Move {0} - NOT CONNECTED", moveComponent.PSMoveID);
-            }
+    //            sensorDisplay = string.Format("Acc[{0:F2}, {1:F2}, {2:F2}] Gyro[{3:F2}, {4:F2}, {5:F2}] Mag[{6:F2}, {7:F2}, {8:F2}]\n",
+    //                moveComponent.Accelerometer.x,
+    //                moveComponent.Accelerometer.y,
+    //                moveComponent.Accelerometer.z,
+    //                moveComponent.Gyroscope.x,
+    //                moveComponent.Gyroscope.y,
+    //                moveComponent.Gyroscope.z,
+    //                moveComponent.Magnetometer.x,
+    //                moveComponent.Magnetometer.y,
+    //                moveComponent.Magnetometer.z);
+    //        }
+    //        else
+    //        {
+    //            btnDisplay = string.Format("PS Move {0} - NOT CONNECTED", moveComponent.PSMoveID);
+    //        }
 
-            GUI.Label(new Rect(10, 10 + moveComponent.PSMoveID * 50, 500, 100), btnDisplay);
-            GUI.Label(new Rect(10, 35 + moveComponent.PSMoveID * 50, 500, 100), sensorDisplay);
-        }
-    }
+    //        GUI.Label(new Rect(10, 10 + moveComponent.PSMoveID * 50, 500, 100), btnDisplay);
+    //        GUI.Label(new Rect(10, 35 + moveComponent.PSMoveID * 50, 500, 100), sensorDisplay);
+    //    }
+    //}
 }
