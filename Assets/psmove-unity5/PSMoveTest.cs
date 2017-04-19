@@ -42,12 +42,14 @@ public class PSMoveTest : MonoBehaviour
     private MeshRenderer rendererComponent;
     public bool movePressed;
     public GameObject littleCube;
+    public bool showInstructions;
+    public GameObject Instructions;
 
     void Start()
     {
         moveComponent = gameObject.GetComponent<PSMoveController>();
         rendererComponent = gameObject.GetComponent<MeshRenderer>();
-
+        showInstructions = true;
         // Button Pressed callbacks
         moveComponent.OnButtonTrianglePressed += move_OnButtonTrianglePressed;
         moveComponent.OnButtonCirclePressed += move_OnButtonCirclePressed;
@@ -123,9 +125,9 @@ public class PSMoveTest : MonoBehaviour
 
     void move_OnButtonCrossPressed(object sender, EventArgs e)
     {
-        Debug.Log("I want to believe!!!");
         UnityEngine.Random r = new UnityEngine.Random();
-        Application.CaptureScreenshot(@"C:\Users\Richard\Pictures\UnityChalkBoard\" + UnityEngine.Random.Range(0, 1000000) + ".png");
+        Application.CaptureScreenshot(@"C:\Users\Richard\Pictures\UnityChalkBoard\" + UnityEngine.Random.Range(0, 1000000000) + ".png");
+        //check if time is zero so that the coroutine only starts one time, otherwise it can get messy.
         if (time == 0) StartCoroutine(WaitTwoSecondsThenDestroyCubes());
         time = 0;
 
@@ -151,6 +153,8 @@ public class PSMoveTest : MonoBehaviour
 
     void move_OnButtonSquarePressed(object sender, EventArgs e)
     {
+        Application.CaptureScreenshot(@"C:\Users\Richard\Pictures\UnityChalkBoard\" + UnityEngine.Random.Range(0, 1000000000) + ".png");
+        Debug.Log("You successfully took a screenshot of your \"masterpiece\"");
         Debug.Log("Square button pressed");
     }
 
@@ -161,6 +165,8 @@ public class PSMoveTest : MonoBehaviour
 
     void move_OnButtonStartPressed(object sender, EventArgs e)
     {
+        showInstructions = !showInstructions;
+        Instructions.gameObject.SetActive(showInstructions);
         Debug.Log("Start button pressed");
     }
 
